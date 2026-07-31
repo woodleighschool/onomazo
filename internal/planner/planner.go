@@ -313,7 +313,7 @@ func (p *Planner) compareCandidates(left, right *workItem) int {
 
 func (p *Planner) nextSequenceName(base, platform string, occupied map[string]struct{}) (string, string) {
 	separator := p.config.Naming.Collisions.Disambiguate.Separator
-	for sequence := 2; sequence <= maximumSequence; sequence++ {
+	for sequence := 1; sequence <= maximumSequence; sequence++ {
 		candidate := base + separator + strconv.Itoa(sequence)
 		if reason := p.invalidName(candidate, platform); reason != "" {
 			if len(candidate) > p.maximumLength(platform) {

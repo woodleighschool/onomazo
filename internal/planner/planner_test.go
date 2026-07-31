@@ -92,7 +92,7 @@ func TestPlanIsDeterministicAndPreservesExistingName(t *testing.T) {
 		t.Fatalf("Plan() depends on input order: %#v != %#v", forward, reverse)
 	}
 
-	if got, want := forward[0].DesiredName, "EMP-UNIT-2"; got != want {
+	if got, want := forward[0].DesiredName, "EMP-UNIT-1"; got != want {
 		t.Errorf("first desired name = %q, want %q", got, want)
 	}
 	if got, want := forward[1].Status, StatusUnchanged; got != want {
@@ -111,8 +111,27 @@ func TestPlanReservesUnmanagedCurrentNames(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Plan() error = %v", err)
 	}
-	if got, want := plan[0].DesiredName, "EMP-UNIT-2"; got != want {
+	if got, want := plan[0].DesiredName, "EMP-UNIT-1"; got != want {
 		t.Errorf("managed desired name = %q, want %q", got, want)
+	}
+}
+
+func TestPlanPreservesExistingFirstCollisionSuffix(t *testing.T) {
+	t.Parallel()
+
+	planner := loadPlanner(t, basicNaming(15, true))
+	plan, err := planner.Plan([]Record{
+		record("reserved", "RESERVED", "EMP-UNIT", domain.User{}),
+		record("managed", "MANAGED", "EMP-UNIT-1", user("unit", "staff")),
+	})
+	if err != nil {
+		t.Fatalf("Plan() error = %v", err)
+	}
+	if got, want := plan[0].DesiredName, "EMP-UNIT-1"; got != want {
+		t.Errorf("managed desired name = %q, want %q", got, want)
+	}
+	if got, want := plan[0].Status, StatusUnchanged; got != want {
+		t.Errorf("managed status = %q, want %q", got, want)
 	}
 }
 
