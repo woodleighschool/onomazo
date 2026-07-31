@@ -1,169 +1,87 @@
 ---
 version: 1
 
-settings:
-  duplicatePolicy:
-    scope: global
-    onConflict: append_suffix
-    suffix:
-      format: "-%d"
-      min: 1
-      max: 99
+connections:
+  microsoft:
+    type: microsoft_graph
+    tenant_id: ${MICROSOFT_TENANT_ID}
+    client_id: ${MICROSOFT_CLIENT_ID}
+    client_secret: ${MICROSOFT_CLIENT_SECRET}
+  jamf:
+    type: jamf
+    url: ${JAMF_URL}
+    client_id: ${JAMF_CLIENT_ID}
+    client_secret: ${JAMF_CLIENT_SECRET}
 
-# Exclude specific devices from renaming
-# These are evaluated before group mappings, so groups cannot be used to exclude devices (yet?).
-exclude:
-  serials:
-    - DEMO12345 # demo/testing devices
-    - TEMP67890 # temporary devices
-  users:
-    - svc-enrollment@company.com # service accounts
-    - guest@company.com # guest accounts
-  deviceIds: []
+devices:
+  - name: intune
+    type: intune
+    connection: microsoft
+    platforms: [macos, ios, windows]
+  - name: jamf
+    type: jamf
+    connection: jamf
+    platforms: [macos, ios]
 
-# Override names for specific devices
-staticNames:
-  - serial: ABC123456
-    name: CONF-ROOM-A-PC
-    enforce: true
-  - serial: XYZ789012
-    name: RECEPTION-IPAD
-    enforce: false
+identity:
+  name: entra
+  type: entra
+  connection: microsoft
+  groups:
+    staff:
+      - ${ENTRA_STAFF_GROUP_ID}
+    students:
+      - ${ENTRA_STUDENTS_GROUP_ID}
 
-# Add metadata attributes based on group membership and device properties
-metadata:
-  # Students get student prefixes
-  - name: students
-    priority: 10
-    match:
-      anyGroup:
-        - 11111111-2222-3333-4444-555555555555 # Students AD group
-    values:
-      category: student
-      prefix: STU
-      role: student
+reconcile:
+  poll_interval: 1m
+  device_details_ttl: 1h
+  identity_ttl: 15m
+  rename_retry_after: 30m
+  rename_max_attempts: 3
+  concurrency: 4
 
-  # Faculty get faculty prefixes
-  - name: faculty
-    priority: 15
-    match:
-      anyGroup:
-        - 22222222-3333-4444-5555-666666666666 # Faculty AD group
-    values:
-      category: faculty
-      prefix: FAC
-      role: teacher
+state:
+  type: memory
 
-  # IT staff get admin prefixes
-  - name: it-admin
-    priority: 30
-    match:
-      anyGroup:
-        - 33333333-4444-5555-6666-777777777777 # IT Admin group
-      department:
-        - IT
-        - Information Technology
-    values:
-      category: admin
-      prefix: ADM
-      role: admin
+naming:
+  constraints:
+    max_length: 15
+    pattern: "^[A-Z0-9][A-Z0-9-]*$"
 
-  # Lab computers get lab designation
-  - name: computer-labs
-    priority: 25
-    match:
-      anyGroup:
-        - 44444444-5555-6666-7777-888888888888 # Computer Lab devices
-      platforms:
-        - windows
-    values:
-      category: lab
-      location: lab
-      prefix: LAB
+  overrides:
+    - name: leave-example-device-alone
+      when: 'device.serial_number == "EXAMPLE-SERIAL"'
+      exclude: true
 
-  # Mobile carts for shared iPads
-  - name: mobile-carts
-    priority: 20
-    match:
-      anyGroup:
-        - 55555555-6666-7777-8888-999999999999 # Mobile cart devices
-      platforms:
-        - ios
-    values:
-      category: cart
-      location: cart
-      prefix: CRT
+  variables:
+    role:
+      cases:
+        - when: '"students" in user.groups'
+          value: STU
+        - when: '"staff" in user.groups'
+          value: EMP
 
-rules:
-  # Lab computers: LAB-ROOMNAME-##
-  - name: computer-labs
-    priority: 100
-    match:
-      category:
-        - lab
-      platforms:
-        - windows
-    template: '{{ clean (printf "%s-%s" (.Attr "prefix") (substr 0 6 (.Attr "serial"))) }}'
-    duplicatePolicy:
-      scope: per-platform
-      onConflict: append_suffix
-      suffix:
-        format: "-%02d"
-        min: 1
-        max: 50
-    stopProcessing: true
+  rules:
+    - name: assigned-user
+      when: |
+        user.present &&
+        "role" in vars &&
+        user.mail_nickname != ""
+      desired_name: |
+        (vars["role"] + "-" + slug(user.mail_nickname)).upperAscii()
 
-  # Mobile carts: CRT-CART##
-  - name: mobile-carts
-    priority: 90
-    match:
-      category:
-        - cart
-      platforms:
-        - ios
-    template: '{{ clean (printf "%s-%s" (.Attr "prefix") (substr 0 4 (.Attr "serial"))) }}'
-    duplicatePolicy:
-      scope: global
-      onConflict: append_suffix
-    stopProcessing: true
-
-  # IT admin devices: ADM-USERNAME
-  - name: it-admin-devices
-    priority: 80
-    match:
-      category:
-        - admin
-      role:
-        - admin
-    template: '{{ clean (printf "%s-%s" (.Attr "prefix") (.Attr "username")) }}'
-    maxLength: 15
-    stopProcessing: true
-
-  # Faculty devices: FAC-USERNAME
-  - name: faculty-devices
-    priority: 70
-    match:
-      category:
-        - faculty
-      role:
-        - teacher
-    template: '{{ clean (printf "%s-%s" (.Attr "prefix") (.Attr "username")) }}'
-    maxLength: 15
-    stopProcessing: true
-
-  # Student devices: STU-USERNAME
-  - name: student-devices
-    priority: 60
-    match:
-      category:
-        - student
-      role:
-        - student
-    template: '{{ clean (printf "%s-%s" (.Attr "prefix") (.Attr "username")) }}'
-    maxLength: 15
-    stopProcessing: true
-
-  # Fallback for any other devices
-  - name: fallback
-    priority: 0
-    template: '{{ clean (printf "DEV-%s" (substr 0 8 (.Attr "serial"))) }}'
+  collisions:
+    rank:
+      - expression: |
+          device.platform == "macos" ? 0 :
+          device.platform == "ios" ? 1 :
+          device.platform == "windows" ? 2 :
+          99
+        order: ascending
+      - expression: device.enrolled_at
+        order: ascending
+    disambiguate:
+      type: sequence
+      separator: "-"
+      preserve_existing: true
