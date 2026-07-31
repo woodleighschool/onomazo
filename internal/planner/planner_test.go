@@ -50,9 +50,9 @@ func TestPlanEvaluatesCompletePolicy(t *testing.T) {
 
 	plan, err := planner.Plan([]Record{
 		record("unmanaged", "NONE", "OLD", domain.User{}),
-		record("student", "STUDENT", "OLD", user("alex", "students")),
-		record("overlap", "OVERLAP", "OLD", user("lee", "students", "staff")),
-		record("excluded", "EXCLUDED", "OLD", user("casey", "staff")),
+		record("student", "STUDENT", "OLD", user("unit", "students")),
+		record("overlap", "OVERLAP", "OLD", user("overlap", "students", "staff")),
+		record("excluded", "EXCLUDED", "OLD", user("excluded", "staff")),
 		record("library", "LIBRARY", "OLD", domain.User{}),
 	})
 	if err != nil {
@@ -60,10 +60,10 @@ func TestPlanEvaluatesCompletePolicy(t *testing.T) {
 	}
 
 	want := []Item{
-		{Source: "intune", ID: "excluded", SerialNumber: "EXCLUDED", Platform: "macos", CurrentName: "OLD", User: "casey@example.com", Rule: "excluded-serial", Status: StatusExcluded, Reason: "matched override"},
+		{Source: "intune", ID: "excluded", SerialNumber: "EXCLUDED", Platform: "macos", CurrentName: "OLD", User: "excluded@example.com", Rule: "excluded-serial", Status: StatusExcluded, Reason: "matched override"},
 		{Source: "intune", ID: "library", SerialNumber: "LIBRARY", Platform: "macos", CurrentName: "OLD", DesiredName: "LIBRARY-01", Rule: "fixed-library", Status: StatusRename, Reason: "name differs"},
-		{Source: "intune", ID: "overlap", SerialNumber: "OVERLAP", Platform: "macos", CurrentName: "OLD", User: "lee@example.com", Status: StatusUnresolved, Reason: `variable "role" resolved to conflicting values`},
-		{Source: "intune", ID: "student", SerialNumber: "STUDENT", Platform: "macos", CurrentName: "OLD", DesiredName: "STU-ALEX", User: "alex@example.com", Rule: "assigned-user", Status: StatusRename, Reason: "name differs"},
+		{Source: "intune", ID: "overlap", SerialNumber: "OVERLAP", Platform: "macos", CurrentName: "OLD", User: "overlap@example.com", Status: StatusUnresolved, Reason: `variable "role" resolved to conflicting values`},
+		{Source: "intune", ID: "student", SerialNumber: "STUDENT", Platform: "macos", CurrentName: "OLD", DesiredName: "STU-UNIT", User: "unit@example.com", Rule: "assigned-user", Status: StatusRename, Reason: "name differs"},
 		{Source: "intune", ID: "unmanaged", SerialNumber: "NONE", Platform: "macos", CurrentName: "OLD", Status: StatusUnmanaged, Reason: "no naming rule matched"},
 	}
 	if !reflect.DeepEqual(plan, want) {
@@ -75,9 +75,9 @@ func TestPlanIsDeterministicAndPreservesExistingName(t *testing.T) {
 	t.Parallel()
 
 	planner := loadPlanner(t, basicNaming(15, true))
-	first := record("first", "FIRST", "OLD", user("alex", "staff"))
+	first := record("first", "FIRST", "OLD", user("unit", "staff"))
 	first.Device.EnrolledAt = time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC)
-	second := record("second", "SECOND", "EMP-ALEX", user("alex", "staff"))
+	second := record("second", "SECOND", "EMP-UNIT", user("unit", "staff"))
 	second.Device.EnrolledAt = time.Date(2026, time.July, 1, 0, 0, 0, 0, time.UTC)
 
 	forward, err := planner.Plan([]Record{first, second})
@@ -92,7 +92,7 @@ func TestPlanIsDeterministicAndPreservesExistingName(t *testing.T) {
 		t.Fatalf("Plan() depends on input order: %#v != %#v", forward, reverse)
 	}
 
-	if got, want := forward[0].DesiredName, "EMP-ALEX-2"; got != want {
+	if got, want := forward[0].DesiredName, "EMP-UNIT-2"; got != want {
 		t.Errorf("first desired name = %q, want %q", got, want)
 	}
 	if got, want := forward[1].Status, StatusUnchanged; got != want {
@@ -105,13 +105,13 @@ func TestPlanReservesUnmanagedCurrentNames(t *testing.T) {
 
 	planner := loadPlanner(t, basicNaming(15, false))
 	plan, err := planner.Plan([]Record{
-		record("reserved", "RESERVED", "EMP-ALEX", domain.User{}),
-		record("managed", "MANAGED", "OLD", user("alex", "staff")),
+		record("reserved", "RESERVED", "EMP-UNIT", domain.User{}),
+		record("managed", "MANAGED", "OLD", user("unit", "staff")),
 	})
 	if err != nil {
 		t.Fatalf("Plan() error = %v", err)
 	}
-	if got, want := plan[0].DesiredName, "EMP-ALEX-2"; got != want {
+	if got, want := plan[0].DesiredName, "EMP-UNIT-2"; got != want {
 		t.Errorf("managed desired name = %q, want %q", got, want)
 	}
 }
@@ -159,13 +159,13 @@ func TestPlanNeverTruncatesCollisionSuffix(t *testing.T) {
 
 	planner := loadPlanner(t, basicNaming(8, false))
 	plan, err := planner.Plan([]Record{
-		record("one", "ONE", "OLD-1", user("alex", "staff")),
-		record("two", "TWO", "OLD-2", user("alex", "staff")),
+		record("one", "ONE", "OLD-1", user("unit", "staff")),
+		record("two", "TWO", "OLD-2", user("unit", "staff")),
 	})
 	if err != nil {
 		t.Fatalf("Plan() error = %v", err)
 	}
-	if got, want := plan[0].DesiredName, "EMP-ALEX"; got != want {
+	if got, want := plan[0].DesiredName, "EMP-UNIT"; got != want {
 		t.Errorf("winner desired name = %q, want %q", got, want)
 	}
 	if got, want := plan[1].Status, StatusInvalid; got != want {

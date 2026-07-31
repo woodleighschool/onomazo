@@ -22,12 +22,12 @@ func TestCompilerTypeChecksNativeFields(t *testing.T) {
 
 	value, err := program.Eval(Input{
 		Device: &domain.Device{SerialNumber: "ABC123"},
-		User:   &domain.User{MailNickname: "Lee Example"},
+		User:   &domain.User{MailNickname: "Example User"},
 	})
 	if err != nil {
 		t.Fatalf("Eval() error = %v", err)
 	}
-	if got, want := value, "LEE-EXAMPLE-ABC123"; got != want {
+	if got, want := value, "EXAMPLE-USER-ABC123"; got != want {
 		t.Errorf("Eval() = %v, want %v", got, want)
 	}
 }
