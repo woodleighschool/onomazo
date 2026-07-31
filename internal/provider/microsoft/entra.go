@@ -195,7 +195,3 @@ func dereference(value *string) string {
 	}
 	return *value
 }
-
-func int32Pointer(value int32) *int32 {
-	return &value
-}

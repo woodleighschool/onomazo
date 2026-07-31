@@ -101,6 +101,8 @@ func logResult(logger *slog.Logger, result app.Result) {
 		attributes = append(attributes, "error", result.Error)
 	}
 	switch result.Action {
+	case app.ActionPlanned:
+		logger.Info("device rename planned", attributes...)
 	case app.ActionSubmitted:
 		logger.Info("device rename submitted", attributes...)
 	case app.ActionPending:

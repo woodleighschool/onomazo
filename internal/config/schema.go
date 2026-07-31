@@ -144,5 +144,6 @@ type RulePrograms struct {
 // Duration is a YAML duration parsed with time.ParseDuration.
 type Duration struct {
 	time.Duration
+
 	set bool
 }

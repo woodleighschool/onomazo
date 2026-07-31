@@ -41,7 +41,7 @@ func (c *Client) ListIntuneDevices(ctx context.Context, source string) ([]domain
 					"enrolledDateTime",
 					"lastSyncDateTime",
 				},
-				Top: int32Pointer(graphPageSize),
+				Top: new(graphPageSize),
 			},
 		},
 	)

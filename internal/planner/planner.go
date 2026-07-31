@@ -170,7 +170,7 @@ func (p *Planner) evaluateVariables(input expression.Input) (map[string]string, 
 			if !matched {
 				continue
 			}
-			value := ""
+			var value string
 			if variableCase.Value != nil {
 				value = *variableCase.Value
 			} else {

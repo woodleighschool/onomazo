@@ -391,6 +391,7 @@ type spyLedger struct {
 
 type cancelingLedger struct {
 	spyLedger
+
 	cancel context.CancelFunc
 }
 

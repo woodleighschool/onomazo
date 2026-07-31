@@ -108,10 +108,8 @@ func newRunCommand(configPath *string) *cobra.Command {
 			if once {
 				return errors.Join(runCycle(command.Context(), service, logger), service.Close())
 			}
-			return errors.Join(
-				runLoop(command.Context(), cfg.Reconcile.PollInterval.Duration, service, logger),
-				service.Close(),
-			)
+			runLoop(command.Context(), cfg.Reconcile.PollInterval.Duration, service, logger)
+			return service.Close()
 		},
 	}
 	command.Flags().BoolVar(&once, "once", false, "run one reconciliation cycle and exit")
@@ -160,11 +158,11 @@ type reconciler interface {
 	Reconcile(context.Context, bool) ([]app.Result, error)
 }
 
-func runLoop(ctx context.Context, interval time.Duration, service reconciler, logger *slog.Logger) error {
+func runLoop(ctx context.Context, interval time.Duration, service reconciler, logger *slog.Logger) {
 	for {
 		_ = runCycle(ctx, service, logger)
 		if contextStopped(ctx) {
-			return nil
+			return
 		}
 		timer := time.NewTimer(interval)
 		select {
@@ -175,7 +173,7 @@ func runLoop(ctx context.Context, interval time.Duration, service reconciler, lo
 				default:
 				}
 			}
-			return nil
+			return
 		case <-timer.C:
 		}
 	}
@@ -198,9 +196,9 @@ func runCycle(ctx context.Context, service reconciler, logger *slog.Logger) erro
 		"duration", time.Since(started),
 	}
 	if err != nil {
-		logger.Error("reconciliation failed", append(attributes, "error", err)...)
+		logger.ErrorContext(ctx, "reconciliation failed", append(attributes, "error", err)...)
 	} else {
-		logger.Info("reconciliation complete", attributes...)
+		logger.InfoContext(ctx, "reconciliation complete", attributes...)
 	}
 	return err
 }

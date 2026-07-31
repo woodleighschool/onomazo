@@ -87,6 +87,7 @@ func (l *Ledger) Prepare(
 	}
 
 	switch existing.Status {
+	case IntentPending:
 	case IntentFailed:
 		return Decision{Disposition: DispositionFailed, Attempts: existing.Attempts, Failure: existing.Failure}, nil
 	case IntentStalled:

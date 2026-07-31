@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -212,10 +213,5 @@ func encodePayload(payload any) ([]byte, error) {
 }
 
 func containsStatus(statuses []int, status int) bool {
-	for _, candidate := range statuses {
-		if candidate == status {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(statuses, status)
 }

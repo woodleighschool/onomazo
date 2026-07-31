@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"io"
 	"log/slog"
 	"testing"
 	"time"
@@ -15,17 +14,15 @@ func TestRunLoopCancelsInFlightReconciliation(t *testing.T) {
 	started := make(chan struct{})
 	service := blockingReconciler{started: started}
 	ctx, cancel := context.WithCancel(context.Background())
-	done := make(chan error, 1)
+	done := make(chan struct{})
 	go func() {
-		done <- runLoop(ctx, time.Hour, service, slog.New(slog.NewJSONHandler(io.Discard, nil)))
+		runLoop(ctx, time.Hour, service, slog.New(slog.DiscardHandler))
+		close(done)
 	}()
 	<-started
 	cancel()
 	select {
-	case err := <-done:
-		if err != nil {
-			t.Errorf("runLoop() error = %v, want nil", err)
-		}
+	case <-done:
 	case <-time.After(time.Second):
 		t.Fatal("runLoop() did not stop after cancellation")
 	}

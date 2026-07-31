@@ -47,6 +47,7 @@ const (
 // Result combines a deterministic naming decision with its remote-action state.
 type Result struct {
 	planner.Item
+
 	Action   Action    `json:"action,omitempty"`
 	Attempts int       `json:"attempts,omitempty"`
 	RetryAt  time.Time `json:"retry_at,omitzero"`

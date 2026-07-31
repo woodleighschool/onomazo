@@ -111,7 +111,7 @@ func TestClientRetriesOnceWithFreshTokenAfterUnauthorized(t *testing.T) {
 
 func TestStatusCodePreservesJamfAPIStatus(t *testing.T) {
 	t.Parallel()
-	server := newAuthenticatedServer(t, func(response http.ResponseWriter, request *http.Request) {
+	server := newAuthenticatedServer(t, func(response http.ResponseWriter, _ *http.Request) {
 		writeJSON(t, response, http.StatusForbidden, map[string]string{"error": "not permitted"})
 	})
 	defer server.Close()
