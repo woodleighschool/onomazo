@@ -22,7 +22,7 @@ depends = ["go-deps"]
 
 [tasks.build]
 description = "Build application"
-run = "go build -o bin/onomazo ./cmd/onomazo"
+run = "go build -o onomazo ./cmd/onomazo"
 
 [tasks.tidy]
 description = "Tidy the Go module"
@@ -82,7 +82,7 @@ run = "zizmor --offline --no-ignores .github/workflows"
 
 [tasks.clean]
 description = "Remove local build outputs"
-run = "rm -rf bin dist coverage.out"
+run = "rm -f onomazo coverage.out && rm -rf dist"
 
 [hooks]
 postinstall = "lefthook install"
