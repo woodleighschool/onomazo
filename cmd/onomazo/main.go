@@ -14,9 +14,9 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	"github.com/Woodleigh/IntuneNamer/internal/app"
-	"github.com/Woodleigh/IntuneNamer/internal/config"
-	"github.com/Woodleigh/IntuneNamer/internal/intune"
+	"github.com/woodleighschool/onomazo/internal/app"
+	"github.com/woodleighschool/onomazo/internal/config"
+	"github.com/woodleighschool/onomazo/internal/intune"
 )
 
 var (
@@ -34,14 +34,14 @@ func main() {
 
 func newRootCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "intunenamer",
-		Short: "Intune managed device naming service",
-		Long:  "IntuneNamer continually enforces device names based on a YAML policy and Azure AD metadata.",
+		Use:   "onomazo",
+		Short: "Reconcile managed device names",
+		Long:  "Onomazo reconciles managed device names from configured device and identity data.",
 
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runIntuneNamer()
+			return runOnomazo()
 		},
 	}
 
@@ -96,7 +96,7 @@ func newRootCmd() *cobra.Command {
 	return cmd
 }
 
-func runIntuneNamer() error {
+func runOnomazo() error {
 	appCfg, err := config.LoadAppConfig()
 	if err != nil {
 		return fmt.Errorf("failed to load app config: %w", err)
@@ -114,7 +114,7 @@ func runIntuneNamer() error {
 
 	logger := setupLogging(viper.GetString("log_level"))
 
-	logger.Info("IntuneNamer starting",
+	logger.Info("onomazo starting",
 		"version", version,
 		"log_level", viper.GetString("log_level"),
 		"config_path", appCfg.ConfigPath,
@@ -218,7 +218,7 @@ func newVersionCmd() *cobra.Command {
 		Use:   "version",
 		Short: "Show version information",
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Printf("intunenamer %s\n", version)
+			fmt.Printf("onomazo %s\n", version)
 			fmt.Printf("commit: %s\n", commit)
 			fmt.Printf("built: %s\n", date)
 		},

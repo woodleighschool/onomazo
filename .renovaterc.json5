@@ -2,4 +2,18 @@
   $schema: "https://docs.renovatebot.com/renovate-schema.json",
   extends: ["local>woodleighschool/renovate-config"],
   postUpdateOptions: ["gomodTidy", "gomodUpdateImportPaths"],
+  packageRules: [
+    {
+      matchManagers: ["mise"],
+      minimumReleaseAge: "12 hours",
+    },
+    {
+      description: "Keep Go toolchain pins together",
+      matchManagers: ["dockerfile", "gomod", "mise"],
+      matchDepNames: ["go", "golang"],
+      matchFileNames: ["Dockerfile", "go.mod", ".mise/config.toml"],
+      groupName: "Go toolchain",
+      groupSlug: "go-toolchain",
+    },
+  ],
 }

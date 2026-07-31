@@ -9,8 +9,8 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/Woodleigh/IntuneNamer/internal/config"
-	"github.com/Woodleigh/IntuneNamer/internal/intune"
+	"github.com/woodleighschool/onomazo/internal/config"
+	"github.com/woodleighschool/onomazo/internal/intune"
 )
 
 // Engine generates device names from configuration rules.

@@ -6,7 +6,7 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/Woodleigh/IntuneNamer/internal/intune"
+	"github.com/woodleighschool/onomazo/internal/intune"
 )
 
 // DeviceContext provides device attributes for template rendering and matching.

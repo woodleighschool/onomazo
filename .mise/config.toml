@@ -1,0 +1,84 @@
+[tools]
+go = "1.26.5"
+golangci-lint = "2.12.2"
+lefthook = "2.1.10"
+zizmor = "1.28.0"
+oxfmt = "0.61.0"
+"npm:@commitlint/cli" = "21.2.1"
+
+[settings]
+experimental = true
+pin = true
+lockfile = true
+minimum_release_age = "12 hours"
+
+[tasks.go-deps]
+description = "Download Go dependencies"
+run = "go mod download"
+
+[tasks.deps]
+description = "Install dependencies"
+depends = ["go-deps"]
+
+[tasks.build]
+description = "Build application"
+run = "go build -o bin/onomazo ./cmd/onomazo"
+
+[tasks.tidy]
+description = "Tidy the Go module"
+run = "go mod tidy"
+
+[tasks.tidy-check]
+description = "Check the Go module is tidy"
+run = "go mod tidy -diff"
+
+[tasks.test]
+description = "Run dependency-free Go checks"
+run = ["go vet ./...", "go test -race -count=1 ./..."]
+
+[tasks.go-lint]
+description = "Run Go linters"
+run = "golangci-lint run"
+
+[tasks.go-lint-fix]
+description = "Run Go linters and apply fixes"
+run = "golangci-lint run --fix"
+
+[tasks.lint]
+description = "Run linters"
+depends = ["go-lint"]
+
+[tasks.go-format]
+description = "Format Go code"
+run = "go fmt ./..."
+
+[tasks.repo-format]
+description = "Format repository files"
+run = "oxfmt --write ."
+
+[tasks.go-fmt-check]
+description = "Check Go formatting"
+run = "test -z \"$(gofmt -l .)\" || { gofmt -l .; exit 1; }"
+
+[tasks.repo-fmt-check]
+description = "Check repository formatting"
+run = "oxfmt --check ."
+
+[tasks.format]
+description = "Format code"
+depends = ["go-format", "repo-format"]
+
+[tasks.fmt-check]
+description = "Check formatting"
+depends = ["go-fmt-check", "repo-fmt-check"]
+
+[tasks.workflow-lint]
+description = "Lint GitHub Actions workflows"
+run = "zizmor --offline --no-ignores .github/workflows"
+
+[tasks.clean]
+description = "Remove local build outputs"
+run = "rm -rf bin dist coverage.out"
+
+[hooks]
+postinstall = "lefthook install"

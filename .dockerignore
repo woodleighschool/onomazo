@@ -1,1 +1,16 @@
-bin/
+.git/
+.gitignore
+.dockerignore
+Dockerfile.dockerignore
+
+.env
+.env.*
+config.yaml
+
+/onomazo
+/bin/
+/build/
+/tmp/
+/.gocache/
+*.log
+.DS_Store

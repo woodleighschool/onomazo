@@ -1,3 +1,4 @@
+---
 version: 1
 
 settings:
@@ -42,7 +43,7 @@ metadata:
       prefix: STU
       role: student
 
-  # Faculty get faculty prefixes  
+  # Faculty get faculty prefixes
   - name: faculty
     priority: 15
     match:
@@ -59,7 +60,9 @@ metadata:
     match:
       anyGroup:
         - 33333333-4444-5555-6666-777777777777 # IT Admin group
-      department: [IT, Information Technology]
+      department:
+        - IT
+        - Information Technology
     values:
       category: admin
       prefix: ADM
@@ -71,7 +74,8 @@ metadata:
     match:
       anyGroup:
         - 44444444-5555-6666-7777-888888888888 # Computer Lab devices
-      platforms: [windows]
+      platforms:
+        - windows
     values:
       category: lab
       location: lab
@@ -83,7 +87,8 @@ metadata:
     match:
       anyGroup:
         - 55555555-6666-7777-8888-999999999999 # Mobile cart devices
-      platforms: [ios]
+      platforms:
+        - ios
     values:
       category: cart
       location: cart
@@ -94,8 +99,10 @@ rules:
   - name: computer-labs
     priority: 100
     match:
-      category: [lab]
-      platforms: [windows]
+      category:
+        - lab
+      platforms:
+        - windows
     template: '{{ clean (printf "%s-%s" (.Attr "prefix") (substr 0 6 (.Attr "serial"))) }}'
     duplicatePolicy:
       scope: per-platform
@@ -110,8 +117,10 @@ rules:
   - name: mobile-carts
     priority: 90
     match:
-      category: [cart]
-      platforms: [ios]
+      category:
+        - cart
+      platforms:
+        - ios
     template: '{{ clean (printf "%s-%s" (.Attr "prefix") (substr 0 4 (.Attr "serial"))) }}'
     duplicatePolicy:
       scope: global
@@ -122,18 +131,22 @@ rules:
   - name: it-admin-devices
     priority: 80
     match:
-      category: [admin]
-      role: [admin]
+      category:
+        - admin
+      role:
+        - admin
     template: '{{ clean (printf "%s-%s" (.Attr "prefix") (.Attr "username")) }}'
     maxLength: 15
     stopProcessing: true
 
-  # Faculty devices: FAC-USERNAME 
+  # Faculty devices: FAC-USERNAME
   - name: faculty-devices
     priority: 70
     match:
-      category: [faculty]
-      role: [teacher]
+      category:
+        - faculty
+      role:
+        - teacher
     template: '{{ clean (printf "%s-%s" (.Attr "prefix") (.Attr "username")) }}'
     maxLength: 15
     stopProcessing: true
@@ -142,8 +155,10 @@ rules:
   - name: student-devices
     priority: 60
     match:
-      category: [student]
-      role: [student]
+      category:
+        - student
+      role:
+        - student
     template: '{{ clean (printf "%s-%s" (.Attr "prefix") (.Attr "username")) }}'
     maxLength: 15
     stopProcessing: true

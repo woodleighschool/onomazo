@@ -3,7 +3,7 @@ package app
 import (
 	"time"
 
-	"github.com/Woodleigh/IntuneNamer/internal/intune"
+	"github.com/woodleighschool/onomazo/internal/intune"
 )
 
 // Options configures Service behavior.

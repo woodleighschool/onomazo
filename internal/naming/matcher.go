@@ -5,7 +5,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/Woodleigh/IntuneNamer/internal/config"
+	"github.com/woodleighschool/onomazo/internal/config"
 )
 
 // Matcher matches device attributes against patterns.

@@ -7,9 +7,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Woodleigh/IntuneNamer/internal/config"
-	"github.com/Woodleigh/IntuneNamer/internal/intune"
-	"github.com/Woodleigh/IntuneNamer/internal/naming"
+	"github.com/woodleighschool/onomazo/internal/config"
+	"github.com/woodleighschool/onomazo/internal/intune"
+	"github.com/woodleighschool/onomazo/internal/naming"
 )
 
 // Service manages device naming operations.
