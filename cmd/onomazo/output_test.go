@@ -55,7 +55,75 @@ func TestWriteJSONPlanKeepsBaselineComparisonFields(t *testing.T) {
 	}
 }
 
-func TestWritePlanKeepsEmptyComparisonFields(t *testing.T) {
+func TestWriteHumanPlanUsesAlignedColumns(t *testing.T) {
+	t.Parallel()
+	results := []app.Result{
+		{Item: planner.Item{
+			Source:       "intune",
+			ID:           "device-1",
+			SerialNumber: "SERIAL-1",
+			Platform:     "ios",
+			CurrentName:  "OLD",
+			DesiredName:  "NEW",
+			User:         "unit@example.invalid",
+			Rule:         "fixture-rule",
+			Status:       planner.StatusRename,
+			Reason:       "name differs",
+		}},
+		{Item: planner.Item{
+			Source:       "jamf",
+			ID:           "device-2",
+			SerialNumber: "SERIAL-2",
+			Platform:     "macos",
+			CurrentName:  "LONG-CURRENT-NAME",
+			DesiredName:  "TARGET",
+			User:         "other@example.invalid",
+			Rule:         "fallback",
+			Status:       planner.StatusUnmanaged,
+			Reason:       "no naming rule matched",
+		}},
+	}
+	var output bytes.Buffer
+	if err := writePlan(&output, "human", results); err != nil {
+		t.Fatalf("writePlan() error = %v", err)
+	}
+	lines := strings.Split(strings.TrimSuffix(output.String(), "\n"), "\n")
+	if got, want := len(lines), 3; got != want {
+		t.Fatalf("output lines = %d, want %d: %q", got, want, output.String())
+	}
+	columns := []struct {
+		header string
+		first  string
+		second string
+	}{
+		{header: "STATUS", first: "rename", second: "unmanaged"},
+		{header: "SOURCE", first: "intune", second: "jamf"},
+		{header: "PLATFORM", first: "ios", second: "macos"},
+		{header: "CURRENT", first: "OLD", second: "LONG-CURRENT-NAME"},
+		{header: "DESIRED", first: "NEW", second: "TARGET"},
+		{header: "SERIAL", first: "SERIAL-1", second: "SERIAL-2"},
+		{header: "USER", first: "unit@example.invalid", second: "other@example.invalid"},
+		{header: "RULE", first: "fixture-rule", second: "fallback"},
+		{header: "REASON", first: "name differs", second: "no naming rule matched"},
+	}
+	for _, column := range columns {
+		wantStart := strings.Index(lines[0], column.header)
+		if wantStart < 0 {
+			t.Fatalf("header %q missing from %q", column.header, lines[0])
+		}
+		if got := strings.Index(lines[1], column.first); got != wantStart {
+			t.Errorf("first-row %s starts at %d, want %d: %q", column.header, got, wantStart, lines[1])
+		}
+		if got := strings.Index(lines[2], column.second); got != wantStart {
+			t.Errorf("second-row %s starts at %d, want %d: %q", column.header, got, wantStart, lines[2])
+		}
+	}
+	if strings.Contains(output.String(), "\t") {
+		t.Errorf("human plan contains unexpanded tabs: %q", output.String())
+	}
+}
+
+func TestWriteJSONPlanKeepsEmptyComparisonFields(t *testing.T) {
 	t.Parallel()
 	result := app.Result{Item: planner.Item{
 		Source:       "fixture",
@@ -77,13 +145,5 @@ func TestWritePlanKeepsEmptyComparisonFields(t *testing.T) {
 		if value, exists := record[field]; !exists || value != "" {
 			t.Errorf("%s = %#v, exists %t, want empty field", field, value, exists)
 		}
-	}
-
-	var humanOutput bytes.Buffer
-	if err := writePlan(&humanOutput, "human", []app.Result{result}); err != nil {
-		t.Fatalf("writePlan(human) error = %v", err)
-	}
-	if !strings.Contains(humanOutput.String(), `serial="SERIAL-1"  user=""`) {
-		t.Errorf("human plan = %q, want serial and user", humanOutput.String())
 	}
 }

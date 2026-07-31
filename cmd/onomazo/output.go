@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"text/tabwriter"
 	"time"
 
 	"github.com/woodleighschool/onomazo/internal/app"
@@ -38,10 +39,17 @@ func writePlan(writer io.Writer, output string, results []app.Result) error {
 		}
 		return nil
 	}
+	table := tabwriter.NewWriter(writer, 0, 4, 2, ' ', 0)
+	if _, err := fmt.Fprintln(
+		table,
+		"STATUS\tSOURCE\tPLATFORM\tCURRENT\tDESIRED\tSERIAL\tUSER\tRULE\tREASON",
+	); err != nil {
+		return fmt.Errorf("write plan header: %w", err)
+	}
 	for _, result := range results {
 		if _, err := fmt.Fprintf(
-			writer,
-			"%-10s %-10s %-8s %q -> %q  serial=%q  user=%q  rule=%q  %s\n",
+			table,
+			"%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
 			result.Status,
 			result.Source,
 			result.Platform,
@@ -54,6 +62,9 @@ func writePlan(writer io.Writer, output string, results []app.Result) error {
 		); err != nil {
 			return fmt.Errorf("write plan: %w", err)
 		}
+	}
+	if err := table.Flush(); err != nil {
+		return fmt.Errorf("flush plan: %w", err)
 	}
 	return nil
 }
