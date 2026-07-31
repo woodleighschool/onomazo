@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/woodleighschool/onomazo/main/onomazo.schema.json
 ---
 version: 1
 
@@ -41,8 +42,10 @@ reconcile:
   rename_max_attempts: 3
   concurrency: 4
 
-state:
-  type: memory
+# State defaults to memory. Use file state when cooldowns must survive restarts.
+# state:
+#   type: file
+#   path: /var/lib/onomazo/state.json
 
 naming:
   constraints:

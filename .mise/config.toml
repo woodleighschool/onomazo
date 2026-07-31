@@ -32,6 +32,10 @@ run = "go mod tidy"
 description = "Check the Go module is tidy"
 run = "go mod tidy -diff"
 
+[tasks.generate]
+description = "Generate committed artifacts"
+run = "go generate ./internal/config"
+
 [tasks.test]
 description = "Run dependency-free Go checks"
 run = ["go vet ./...", "go test -race -count=1 ./..."]

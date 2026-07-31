@@ -1,0 +1,392 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/woodleighschool/onomazo/main/onomazo.schema.json",
+  "$ref": "#/$defs/Config",
+  "$defs": {
+    "Collisions": {
+      "properties": {
+        "rank": {
+          "items": {
+            "$ref": "#/$defs/Rank"
+          },
+          "type": "array"
+        },
+        "disambiguate": {
+          "$ref": "#/$defs/Disambiguation"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object"
+    },
+    "Config": {
+      "properties": {
+        "version": {
+          "type": "integer",
+          "enum": [
+            1
+          ]
+        },
+        "connections": {
+          "additionalProperties": {
+            "$ref": "#/$defs/Connection"
+          },
+          "type": "object"
+        },
+        "devices": {
+          "items": {
+            "$ref": "#/$defs/DeviceSource"
+          },
+          "type": "array",
+          "minItems": 1
+        },
+        "identity": {
+          "$ref": "#/$defs/Identity"
+        },
+        "reconcile": {
+          "$ref": "#/$defs/Reconcile"
+        },
+        "state": {
+          "$ref": "#/$defs/State"
+        },
+        "naming": {
+          "$ref": "#/$defs/Naming"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "version",
+        "connections",
+        "devices",
+        "naming"
+      ]
+    },
+    "Connection": {
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "microsoft_graph",
+            "jamf"
+          ]
+        },
+        "tenant_id": {
+          "type": "string"
+        },
+        "client_id": {
+          "type": "string"
+        },
+        "client_secret": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string"
+        },
+        "base_url": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "type",
+        "client_id",
+        "client_secret"
+      ]
+    },
+    "Constraints": {
+      "properties": {
+        "max_length": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "pattern": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "max_length",
+        "pattern"
+      ]
+    },
+    "DeviceSource": {
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "intune",
+            "jamf"
+          ]
+        },
+        "connection": {
+          "type": "string"
+        },
+        "platforms": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "name",
+        "type",
+        "connection",
+        "platforms"
+      ]
+    },
+    "Disambiguation": {
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "sequence"
+          ]
+        },
+        "separator": {
+          "type": "string"
+        },
+        "preserve_existing": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object"
+    },
+    "Identity": {
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "entra"
+          ]
+        },
+        "connection": {
+          "type": "string"
+        },
+        "groups": {
+          "additionalProperties": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "type": "object"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "name",
+        "type",
+        "connection"
+      ]
+    },
+    "Naming": {
+      "properties": {
+        "constraints": {
+          "$ref": "#/$defs/Constraints"
+        },
+        "overrides": {
+          "items": {
+            "$ref": "#/$defs/Override"
+          },
+          "type": "array"
+        },
+        "variables": {
+          "additionalProperties": {
+            "$ref": "#/$defs/Variable"
+          },
+          "type": "object"
+        },
+        "rules": {
+          "items": {
+            "$ref": "#/$defs/Rule"
+          },
+          "type": "array",
+          "minItems": 1
+        },
+        "collisions": {
+          "$ref": "#/$defs/Collisions"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "constraints",
+        "rules"
+      ]
+    },
+    "Override": {
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "when": {
+          "type": "string"
+        },
+        "exclude": {
+          "type": "boolean"
+        },
+        "desired_name": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "name",
+        "when"
+      ]
+    },
+    "Rank": {
+      "properties": {
+        "expression": {
+          "type": "string"
+        },
+        "order": {
+          "type": "string",
+          "enum": [
+            "ascending",
+            "descending"
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "expression",
+        "order"
+      ]
+    },
+    "Reconcile": {
+      "properties": {
+        "poll_interval": {
+          "type": "string",
+          "examples": [
+            "1m",
+            "15m",
+            "1h"
+          ]
+        },
+        "device_details_ttl": {
+          "type": "string",
+          "examples": [
+            "1m",
+            "15m",
+            "1h"
+          ]
+        },
+        "identity_ttl": {
+          "type": "string",
+          "examples": [
+            "1m",
+            "15m",
+            "1h"
+          ]
+        },
+        "rename_retry_after": {
+          "type": "string",
+          "examples": [
+            "1m",
+            "15m",
+            "1h"
+          ]
+        },
+        "rename_max_attempts": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "concurrency": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "additionalProperties": false,
+      "type": "object"
+    },
+    "Rule": {
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "when": {
+          "type": "string"
+        },
+        "desired_name": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "name",
+        "when",
+        "desired_name"
+      ]
+    },
+    "State": {
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "memory",
+            "file"
+          ]
+        },
+        "path": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object"
+    },
+    "Variable": {
+      "properties": {
+        "cases": {
+          "items": {
+            "$ref": "#/$defs/VariableCase"
+          },
+          "type": "array"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "cases"
+      ]
+    },
+    "VariableCase": {
+      "properties": {
+        "when": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        },
+        "expression": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "when"
+      ]
+    }
+  },
+  "title": "Onomazo configuration",
+  "description": "Provider connections, reconciliation policy, and CEL device-naming rules."
+}

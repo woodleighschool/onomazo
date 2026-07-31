@@ -59,6 +59,10 @@ func (c *Client) ResolveUsers(
 	for range identifiers {
 		result := <-results
 		if result.err != nil {
+			if status, ok := StatusCode(result.err); ok && status == 404 {
+				users[result.identifier] = domain.User{}
+				continue
+			}
 			errorsByIdentifier[result.identifier] = result.err
 			continue
 		}

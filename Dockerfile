@@ -22,3 +22,4 @@ WORKDIR /
 COPY --from=builder /workspace/onomazo /onomazo
 USER 65532:65532
 ENTRYPOINT ["/onomazo"]
+CMD ["run"]

@@ -116,3 +116,29 @@ func TestOpenRejectsSemanticallyInvalidFile(t *testing.T) {
 		t.Errorf("Open() error = %q, want semantic validation error", err)
 	}
 }
+
+func TestLockedFileStoreAllowsOnlyOneWriter(t *testing.T) {
+	t.Parallel()
+
+	path := filepath.Join(t.TempDir(), "state.json")
+	first, err := NewLockedFileStore(path)
+	if err != nil {
+		t.Fatalf("first NewLockedFileStore() error = %v", err)
+	}
+	t.Cleanup(func() { _ = first.Close() })
+	second, err := NewLockedFileStore(path)
+	if err == nil {
+		_ = second.Close()
+		t.Fatal("second NewLockedFileStore() error = nil, want writer lock error")
+	}
+	if err := first.Close(); err != nil {
+		t.Fatalf("first Close() error = %v", err)
+	}
+	third, err := NewLockedFileStore(path)
+	if err != nil {
+		t.Fatalf("third NewLockedFileStore() error = %v", err)
+	}
+	if err := third.Close(); err != nil {
+		t.Fatalf("third Close() error = %v", err)
+	}
+}

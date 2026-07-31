@@ -106,3 +106,38 @@ func TestResolveUsersTargetsDistinctUsersAndConfiguredGroups(t *testing.T) {
 		t.Errorf("group identifiers = %#v, want %#v", got, want)
 	}
 }
+
+func TestResolveUsersTreatsMissingInventoryIdentityAsAbsent(t *testing.T) {
+	transport := roundTripFunc(func(request *http.Request) (*http.Response, error) {
+		if strings.Contains(request.URL.Path, "missing-fixture") {
+			return jsonResponse(http.StatusNotFound, map[string]any{
+				"error": map[string]string{"code": "Request_ResourceNotFound", "message": "not found"},
+			}), nil
+		}
+		return jsonResponse(http.StatusOK, map[string]any{
+			"id":                "object-unit",
+			"userPrincipalName": "unit@example.invalid",
+			"mailNickname":      "unit",
+		}), nil
+	})
+	client := newTestClient(t, transport)
+
+	users, err := client.ResolveUsers(
+		context.Background(),
+		[]string{"missing-fixture", "unit"},
+		nil,
+		1,
+	)
+	if err != nil {
+		t.Fatalf("ResolveUsers() error = %v", err)
+	}
+	if got, want := len(users), 2; got != want {
+		t.Fatalf("resolved users = %d, want %d", got, want)
+	}
+	if users["missing-fixture"].Present {
+		t.Error("missing identity is present")
+	}
+	if !users["unit"].Present {
+		t.Error("existing identity is absent")
+	}
+}

@@ -8,6 +8,8 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+
+	"github.com/gofrs/flock"
 )
 
 const fileVersion = 1
@@ -15,6 +17,7 @@ const fileVersion = 1
 // FileStore persists intentions as an atomically replaced JSON document.
 type FileStore struct {
 	path string
+	lock *flock.Flock
 }
 
 type fileDocument struct {
@@ -28,6 +31,53 @@ func NewFileStore(path string) (*FileStore, error) {
 		return nil, fmt.Errorf("state file path is required")
 	}
 	return &FileStore{path: path}, nil
+}
+
+// NewLockedFileStore creates a store after taking the exclusive writer lock beside path.
+func NewLockedFileStore(path string) (*FileStore, error) {
+	store, err := NewFileStore(path)
+	if err != nil {
+		return nil, err
+	}
+	directory := filepath.Dir(path)
+	if err := os.MkdirAll(directory, 0o700); err != nil {
+		return nil, fmt.Errorf("create state directory: %w", err)
+	}
+	lockPath := path + ".lock"
+	lockFile, err := os.OpenFile(lockPath, os.O_CREATE|os.O_RDWR, 0o600)
+	if err != nil {
+		return nil, fmt.Errorf("create state lock: %w", err)
+	}
+	if err := lockFile.Chmod(0o600); err != nil {
+		_ = lockFile.Close()
+		return nil, fmt.Errorf("secure state lock: %w", err)
+	}
+	if err := lockFile.Close(); err != nil {
+		return nil, fmt.Errorf("close state lock: %w", err)
+	}
+	store.lock = flock.New(lockPath)
+	locked, err := store.lock.TryLock()
+	if err != nil {
+		_ = store.lock.Close()
+		return nil, fmt.Errorf("lock state file: %w", err)
+	}
+	if !locked {
+		_ = store.lock.Close()
+		return nil, fmt.Errorf("state file is locked by another onomazo process")
+	}
+	return store, nil
+}
+
+// Close releases the writer lock, when held.
+func (s *FileStore) Close() error {
+	if s == nil || s.lock == nil {
+		return nil
+	}
+	if err := s.lock.Close(); err != nil {
+		return fmt.Errorf("release state lock: %w", err)
+	}
+	s.lock = nil
+	return nil
 }
 
 // Load reads a complete state snapshot. A missing file is an empty store; malformed state fails closed.
