@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"reflect"
+	"slices"
 	"sync"
 	"testing"
 	"time"
@@ -18,6 +19,7 @@ func TestReconcilePlanIsReadOnly(t *testing.T) {
 	t.Parallel()
 	source := &fakeSource{name: "fixture", devices: []domain.Device{{
 		ID:           "device-1",
+		Namespace:    "devices",
 		SerialNumber: "SERIAL-1",
 		CurrentName:  "OLD",
 		Platform:     "macos",
@@ -45,6 +47,70 @@ func TestReconcilePlanIsReadOnly(t *testing.T) {
 	}
 	if intentLedger.prepareCount != 0 || intentLedger.observeCount != 0 {
 		t.Errorf("plan mutated ledger: %#v", intentLedger)
+	}
+}
+
+func TestReconcileSeparatesProviderNamespaces(t *testing.T) {
+	t.Parallel()
+
+	source := &fakeSource{name: "jamf", devices: []domain.Device{
+		{
+			Namespace:    "computers",
+			ID:           "shared-id",
+			SerialNumber: "COMPUTER-SERIAL",
+			CurrentName:  "OLD-COMPUTER",
+			Platform:     "macos",
+		},
+		{
+			Namespace:    "mobile_devices",
+			ID:           "shared-id",
+			SerialNumber: "MOBILE-SERIAL",
+			CurrentName:  "OLD-MOBILE",
+			Platform:     "ios",
+		},
+	}}
+	intentLedger, err := state.Open(state.NewMemoryStore())
+	if err != nil {
+		t.Fatalf("Open() error = %v", err)
+	}
+	service := newTestService(t, Options{
+		Sources: []DeviceSource{source},
+		Planner: fakePlanner{plan: func(records []planner.Record) ([]planner.Item, error) {
+			items := make([]planner.Item, len(records))
+			for index, record := range records {
+				items[index] = renameItem(record, "NEW-"+record.Device.Namespace)
+			}
+			return items, nil
+		}},
+		Ledger: intentLedger,
+	})
+
+	results := mustReconcile(t, service, true)
+	if got, want := len(results), 2; got != want {
+		t.Fatalf("results = %d, want %d", got, want)
+	}
+	for index, result := range results {
+		if got, want := result.Action, ActionSubmitted; got != want {
+			t.Errorf("result %d action = %q, want %q", index, got, want)
+		}
+	}
+	source.mutex.Lock()
+	renamed := append([]domain.Device(nil), source.renamed...)
+	source.mutex.Unlock()
+	if got, want := len(renamed), 2; got != want {
+		t.Fatalf("renamed devices = %d, want %d", got, want)
+	}
+	namespaces := []string{renamed[0].Namespace, renamed[1].Namespace}
+	slices.Sort(namespaces)
+	if got, want := namespaces, []string{"computers", "mobile_devices"}; !reflect.DeepEqual(got, want) {
+		t.Errorf("renamed namespaces = %#v, want %#v", got, want)
+	}
+	intents := intentLedger.Snapshot()
+	if got, want := len(intents), 2; got != want {
+		t.Fatalf("rename intents = %d, want %d", got, want)
+	}
+	if got, want := []string{intents[0].Namespace, intents[1].Namespace}, []string{"computers", "mobile_devices"}; !reflect.DeepEqual(got, want) {
+		t.Errorf("intent namespaces = %#v, want %#v", got, want)
 	}
 }
 
@@ -281,9 +347,9 @@ func TestReconcileStopsPreparingIntentsAfterCancellation(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	intentLedger := &cancelingLedger{cancel: cancel}
 	source := &fakeSource{name: "fixture", devices: []domain.Device{
-		{ID: "device-1", SerialNumber: "SERIAL-1", CurrentName: "OLD-1", Platform: "macos"},
-		{ID: "device-2", SerialNumber: "SERIAL-2", CurrentName: "OLD-2", Platform: "macos"},
-		{ID: "device-3", SerialNumber: "SERIAL-3", CurrentName: "OLD-3", Platform: "macos"},
+		{Namespace: "devices", ID: "device-1", SerialNumber: "SERIAL-1", CurrentName: "OLD-1", Platform: "macos"},
+		{Namespace: "devices", ID: "device-2", SerialNumber: "SERIAL-2", CurrentName: "OLD-2", Platform: "macos"},
+		{Namespace: "devices", ID: "device-3", SerialNumber: "SERIAL-3", CurrentName: "OLD-3", Platform: "macos"},
 	}}
 	service := newTestService(t, Options{
 		Sources: []DeviceSource{source},
@@ -315,6 +381,7 @@ type fakeSource struct {
 	devices     []domain.Device
 	renameErr   error
 	renameCount int
+	renamed     []domain.Device
 }
 
 func (s *fakeSource) Name() string {
@@ -327,10 +394,11 @@ func (s *fakeSource) ListDevices(context.Context) ([]domain.Device, error) {
 	return append([]domain.Device(nil), s.devices...), nil
 }
 
-func (s *fakeSource) Rename(_ context.Context, _ domain.Device, _ string) error {
+func (s *fakeSource) Rename(_ context.Context, device domain.Device, _ string) error {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 	s.renameCount++
+	s.renamed = append(s.renamed, device)
 	return s.renameErr
 }
 
@@ -458,6 +526,7 @@ func newTestService(t *testing.T, options Options) *Service {
 func fixtureDevice(name, model, userID string) domain.Device {
 	return domain.Device{
 		ID:           "device-1",
+		Namespace:    "devices",
 		SerialNumber: "SERIAL-1",
 		CurrentName:  name,
 		Platform:     "macos",
@@ -469,6 +538,7 @@ func fixtureDevice(name, model, userID string) domain.Device {
 func renameItem(record planner.Record, desiredName string) planner.Item {
 	return planner.Item{
 		Source:       record.Device.Source,
+		Namespace:    record.Device.Namespace,
 		ID:           record.Device.ID,
 		SerialNumber: record.Device.SerialNumber,
 		Platform:     record.Device.Platform,
@@ -491,6 +561,7 @@ func unchangedItem(record planner.Record, desiredName string) planner.Item {
 func unmanagedItem(record planner.Record) planner.Item {
 	return planner.Item{
 		Source:       record.Device.Source,
+		Namespace:    record.Device.Namespace,
 		ID:           record.Device.ID,
 		SerialNumber: record.Device.SerialNumber,
 		Platform:     record.Device.Platform,

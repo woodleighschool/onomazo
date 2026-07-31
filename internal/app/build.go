@@ -211,13 +211,13 @@ func (s *jamfSource) ListDevices(ctx context.Context) ([]domain.Device, error) {
 }
 
 func (s *jamfSource) Rename(ctx context.Context, device domain.Device, desiredName string) error {
-	switch device.Platform {
-	case "macos":
+	switch device.Namespace {
+	case jamf.ComputerNamespace:
 		return s.client.RenameComputer(ctx, device.ID, desiredName)
-	case "ios":
+	case jamf.MobileDeviceNamespace:
 		return s.client.RenameMobileDevice(ctx, device.ID, desiredName)
 	default:
-		return fmt.Errorf("jamf platform %q cannot be renamed", device.Platform)
+		return fmt.Errorf("jamf namespace %q cannot be renamed", device.Namespace)
 	}
 }
 

@@ -71,6 +71,7 @@ func TestListIntuneDevicesUsesSelectedFieldsAndPaging(t *testing.T) {
 	want := []domain.Device{
 		{
 			Source:       "intune",
+			Namespace:    managedDeviceNamespace,
 			ID:           "device-1",
 			CurrentName:  "FIRST",
 			SerialNumber: "SERIAL-1",
@@ -83,6 +84,7 @@ func TestListIntuneDevicesUsesSelectedFieldsAndPaging(t *testing.T) {
 		},
 		{
 			Source:       "intune",
+			Namespace:    managedDeviceNamespace,
 			ID:           "device-2",
 			CurrentName:  "SECOND",
 			SerialNumber: "SERIAL-2",

@@ -71,6 +71,30 @@ func TestPlanEvaluatesCompletePolicy(t *testing.T) {
 	}
 }
 
+func TestPlanAllowsSameProviderIDInDifferentNamespaces(t *testing.T) {
+	t.Parallel()
+
+	planner := loadPlanner(t, basicNaming(63, false))
+	computer := record("shared-id", "COMPUTER-SERIAL", "OLD-MAC", user("computer", "staff"))
+	computer.Device.Source = "jamf"
+	computer.Device.Namespace = "computers"
+	mobile := record("shared-id", "MOBILE-SERIAL", "OLD-MOBILE", user("mobile", "staff"))
+	mobile.Device.Source = "jamf"
+	mobile.Device.Namespace = "mobile_devices"
+	mobile.Device.Platform = "ios"
+
+	plan, err := planner.Plan([]Record{computer, mobile})
+	if err != nil {
+		t.Fatalf("Plan() error = %v", err)
+	}
+	if got, want := len(plan), 2; got != want {
+		t.Fatalf("plan entries = %d, want %d", got, want)
+	}
+	if got, want := []string{plan[0].Namespace, plan[1].Namespace}, []string{"computers", "mobile_devices"}; !reflect.DeepEqual(got, want) {
+		t.Errorf("plan namespaces = %#v, want %#v", got, want)
+	}
+}
+
 func TestPlanIsDeterministicAndPreservesExistingName(t *testing.T) {
 	t.Parallel()
 

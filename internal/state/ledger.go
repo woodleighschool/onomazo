@@ -29,9 +29,14 @@ func Open(store Store) (*Ledger, error) {
 		if err := validateIntent(intent); err != nil {
 			return nil, fmt.Errorf("state intent %d: %w", index, err)
 		}
-		key := Key{Source: intent.Source, DeviceID: intent.DeviceID}
+		key := Key{Source: intent.Source, Namespace: intent.Namespace, DeviceID: intent.DeviceID}
 		if _, exists := intents[key]; exists {
-			return nil, fmt.Errorf("state contains duplicate device %s/%s", key.Source, key.DeviceID)
+			return nil, fmt.Errorf(
+				"state contains duplicate device %s/%s/%s",
+				key.Source,
+				key.Namespace,
+				key.DeviceID,
+			)
 		}
 		intents[key] = intent
 	}
@@ -73,6 +78,7 @@ func (l *Ledger) Prepare(
 	if !found || existing.DesiredName != desiredName {
 		intent := Intent{
 			Source:       key.Source,
+			Namespace:    key.Namespace,
 			DeviceID:     key.DeviceID,
 			SerialNumber: serialNumber,
 			DesiredName:  desiredName,
@@ -159,7 +165,7 @@ func (l *Ledger) Cancel(key Key) error {
 	return l.deleteLocked(key)
 }
 
-// Snapshot returns intentions sorted by provider and device ID.
+// Snapshot returns intentions sorted by provider, resource namespace, and device ID.
 func (l *Ledger) Snapshot() []Intent {
 	l.mutex.Lock()
 	defer l.mutex.Unlock()
@@ -199,14 +205,17 @@ func snapshot(intents map[Key]Intent) []Intent {
 		if order := cmp.Compare(left.Source, right.Source); order != 0 {
 			return order
 		}
+		if order := cmp.Compare(left.Namespace, right.Namespace); order != 0 {
+			return order
+		}
 		return cmp.Compare(left.DeviceID, right.DeviceID)
 	})
 	return result
 }
 
 func validateIntent(intent Intent) error {
-	if intent.Source == "" || intent.DeviceID == "" {
-		return fmt.Errorf("source and device_id are required")
+	if intent.Source == "" || intent.Namespace == "" || intent.DeviceID == "" {
+		return fmt.Errorf("source, namespace, and device_id are required")
 	}
 	if intent.SerialNumber == "" || intent.DesiredName == "" {
 		return fmt.Errorf("serial_number and desired_name are required")
@@ -229,8 +238,8 @@ func validateRequest(
 	retryAfter time.Duration,
 	maxAttempts int,
 ) error {
-	if key.Source == "" || key.DeviceID == "" {
-		return fmt.Errorf("source and device ID are required")
+	if key.Source == "" || key.Namespace == "" || key.DeviceID == "" {
+		return fmt.Errorf("source, namespace, and device ID are required")
 	}
 	if serialNumber == "" || desiredName == "" {
 		return fmt.Errorf("serial number and desired name are required")

@@ -2,6 +2,7 @@ package state
 
 import (
 	"errors"
+	"reflect"
 	"testing"
 	"time"
 )
@@ -14,7 +15,7 @@ func TestLedgerCooldownRetriesAndStalls(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Open() error = %v", err)
 	}
-	key := Key{Source: "intune", DeviceID: "device-1"}
+	key := Key{Source: "intune", Namespace: "managed_devices", DeviceID: "device-1"}
 	started := time.Date(2026, time.July, 31, 0, 0, 0, 0, time.UTC)
 	cooldown := 30 * time.Minute
 
@@ -61,7 +62,7 @@ func TestLedgerSupersedesChangedDesiredName(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Open() error = %v", err)
 	}
-	key := Key{Source: "jamf", DeviceID: "42"}
+	key := Key{Source: "jamf", Namespace: "computers", DeviceID: "42"}
 	now := time.Date(2026, time.July, 31, 0, 0, 0, 0, time.UTC)
 	if _, err := ledger.Prepare(key, "SERIAL", "OLD", "FIRST", now, time.Hour, 3); err != nil {
 		t.Fatalf("Prepare() error = %v", err)
@@ -78,6 +79,41 @@ func TestLedgerSupersedesChangedDesiredName(t *testing.T) {
 	}
 }
 
+func TestLedgerSeparatesProviderNamespaces(t *testing.T) {
+	t.Parallel()
+
+	ledger, err := Open(NewMemoryStore())
+	if err != nil {
+		t.Fatalf("Open() error = %v", err)
+	}
+	now := time.Date(2026, time.July, 31, 0, 0, 0, 0, time.UTC)
+	keys := []Key{
+		{Source: "jamf", Namespace: "computers", DeviceID: "shared-id"},
+		{Source: "jamf", Namespace: "mobile_devices", DeviceID: "shared-id"},
+	}
+	for index, key := range keys {
+		if _, err := ledger.Prepare(
+			key,
+			"SERIAL-"+key.Namespace,
+			"OLD",
+			"NEW",
+			now.Add(time.Duration(index)*time.Minute),
+			time.Hour,
+			3,
+		); err != nil {
+			t.Fatalf("Prepare(%s) error = %v", key.Namespace, err)
+		}
+	}
+
+	intents := ledger.Snapshot()
+	if got, want := len(intents), 2; got != want {
+		t.Fatalf("intents = %d, want %d", got, want)
+	}
+	if got, want := []string{intents[0].Namespace, intents[1].Namespace}, []string{"computers", "mobile_devices"}; !reflect.DeepEqual(got, want) {
+		t.Errorf("intent namespaces = %#v, want %#v", got, want)
+	}
+}
+
 func TestLedgerClearsObservedAndReusedDevices(t *testing.T) {
 	t.Parallel()
 
@@ -85,7 +121,7 @@ func TestLedgerClearsObservedAndReusedDevices(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Open() error = %v", err)
 	}
-	key := Key{Source: "intune", DeviceID: "device"}
+	key := Key{Source: "intune", Namespace: "managed_devices", DeviceID: "device"}
 	now := time.Date(2026, time.July, 31, 0, 0, 0, 0, time.UTC)
 	if _, err := ledger.Prepare(key, "SERIAL-1", "OLD", "NEW", now, time.Hour, 3); err != nil {
 		t.Fatalf("Prepare() error = %v", err)
@@ -119,7 +155,7 @@ func TestLedgerKeepsExplicitFailureUntilDesiredNameChanges(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Open() error = %v", err)
 	}
-	key := Key{Source: "intune", DeviceID: "device"}
+	key := Key{Source: "intune", Namespace: "managed_devices", DeviceID: "device"}
 	now := time.Date(2026, time.July, 31, 0, 0, 0, 0, time.UTC)
 	if _, err := ledger.Prepare(key, "SERIAL", "OLD", "NEW", now, time.Hour, 3); err != nil {
 		t.Fatalf("Prepare() error = %v", err)
@@ -153,7 +189,7 @@ func TestLedgerRollsBackWhenPersistenceFails(t *testing.T) {
 		t.Fatalf("Open() error = %v", err)
 	}
 	_, err = ledger.Prepare(
-		Key{Source: "intune", DeviceID: "device"},
+		Key{Source: "intune", Namespace: "managed_devices", DeviceID: "device"},
 		"SERIAL",
 		"OLD",
 		"NEW",

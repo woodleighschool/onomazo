@@ -2,10 +2,11 @@ package state
 
 import "time"
 
-// Key identifies one device within a provider.
+// Key identifies one device within a provider resource namespace.
 type Key struct {
-	Source   string
-	DeviceID string
+	Source    string
+	Namespace string
+	DeviceID  string
 }
 
 // IntentStatus describes an outstanding rename intention.
@@ -20,6 +21,7 @@ const (
 // Intent records a rename before the corresponding provider request is submitted.
 type Intent struct {
 	Source       string       `json:"source"`
+	Namespace    string       `json:"namespace"`
 	DeviceID     string       `json:"device_id"`
 	SerialNumber string       `json:"serial_number"`
 	DesiredName  string       `json:"desired_name"`

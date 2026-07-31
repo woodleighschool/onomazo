@@ -74,7 +74,7 @@ func newPlanCommand(configPath *string) *cobra.Command {
 			}
 			results, err := service.Reconcile(command.Context(), false)
 			if err != nil {
-				return errors.Join(fmt.Errorf("plan device names: %w", err), service.Close())
+				return errors.Join(err, service.Close())
 			}
 			return errors.Join(writePlan(command.OutOrStdout(), output, results), service.Close())
 		},

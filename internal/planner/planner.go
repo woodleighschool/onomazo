@@ -30,6 +30,12 @@ type workItem struct {
 	ranks         []rankValue
 }
 
+type deviceIdentity struct {
+	source    string
+	namespace string
+	id        string
+}
+
 type rankValue struct {
 	kind      expression.Kind
 	integer   int64
@@ -52,11 +58,20 @@ func New(cfg *config.Config) (*Planner, error) {
 // Plan returns one stable plan item for every input record without performing remote writes.
 func (p *Planner) Plan(records []Record) ([]Item, error) {
 	work := make([]workItem, len(records))
-	seen := make(map[string]struct{}, len(records))
+	seen := make(map[deviceIdentity]struct{}, len(records))
 	for index, record := range records {
-		key := record.Device.Source + "\x00" + record.Device.ID
+		key := deviceIdentity{
+			source:    record.Device.Source,
+			namespace: record.Device.Namespace,
+			id:        record.Device.ID,
+		}
 		if _, exists := seen[key]; exists {
-			return nil, fmt.Errorf("device %s/%s is duplicated", record.Device.Source, record.Device.ID)
+			return nil, fmt.Errorf(
+				"device %s/%s/%s is duplicated",
+				record.Device.Source,
+				record.Device.Namespace,
+				record.Device.ID,
+			)
 		}
 		seen[key] = struct{}{}
 		work[index] = p.evaluate(record)
@@ -64,6 +79,9 @@ func (p *Planner) Plan(records []Record) ([]Item, error) {
 
 	slices.SortFunc(work, func(left, right workItem) int {
 		if order := cmp.Compare(left.record.Device.Source, right.record.Device.Source); order != 0 {
+			return order
+		}
+		if order := cmp.Compare(left.record.Device.Namespace, right.record.Device.Namespace); order != 0 {
 			return order
 		}
 		return cmp.Compare(left.record.Device.ID, right.record.Device.ID)
@@ -83,6 +101,7 @@ func (p *Planner) evaluate(record Record) workItem {
 		record: record,
 		plan: Item{
 			Source:       record.Device.Source,
+			Namespace:    record.Device.Namespace,
 			ID:           record.Device.ID,
 			SerialNumber: record.Device.SerialNumber,
 			Platform:     record.Device.Platform,
@@ -306,6 +325,9 @@ func (p *Planner) compareCandidates(left, right *workItem) int {
 		}
 	}
 	if order := cmp.Compare(left.record.Device.Source, right.record.Device.Source); order != 0 {
+		return order
+	}
+	if order := cmp.Compare(left.record.Device.Namespace, right.record.Device.Namespace); order != 0 {
 		return order
 	}
 	return cmp.Compare(left.record.Device.ID, right.record.Device.ID)

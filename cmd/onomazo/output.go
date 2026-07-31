@@ -12,18 +12,19 @@ import (
 )
 
 type planOutput struct {
-	Message  string         `json:"msg"`
-	Source   string         `json:"source"`
-	ID       string         `json:"id"`
-	Device   string         `json:"device"`
-	Platform string         `json:"platform"`
-	Serial   string         `json:"serial"`
-	User     string         `json:"user"`
-	To       string         `json:"to"`
-	Rule     string         `json:"rule"`
-	Status   planner.Status `json:"status"`
-	Reason   string         `json:"reason,omitempty"`
-	Action   app.Action     `json:"action"`
+	Message   string         `json:"msg"`
+	Source    string         `json:"source"`
+	Namespace string         `json:"namespace"`
+	ID        string         `json:"id"`
+	Device    string         `json:"device"`
+	Platform  string         `json:"platform"`
+	Serial    string         `json:"serial"`
+	User      string         `json:"user"`
+	To        string         `json:"to"`
+	Rule      string         `json:"rule"`
+	Status    planner.Status `json:"status"`
+	Reason    string         `json:"reason,omitempty"`
+	Action    app.Action     `json:"action"`
 }
 
 func writePlan(writer io.Writer, output string, results []app.Result) error {
@@ -63,24 +64,26 @@ func newPlanOutput(result app.Result) planOutput {
 		message = "device rename planned"
 	}
 	return planOutput{
-		Message:  message,
-		Source:   result.Source,
-		ID:       result.ID,
-		Device:   result.CurrentName,
-		Platform: result.Platform,
-		Serial:   result.SerialNumber,
-		User:     result.User,
-		To:       result.DesiredName,
-		Rule:     result.Rule,
-		Status:   result.Status,
-		Reason:   result.Reason,
-		Action:   result.Action,
+		Message:   message,
+		Source:    result.Source,
+		Namespace: result.Namespace,
+		ID:        result.ID,
+		Device:    result.CurrentName,
+		Platform:  result.Platform,
+		Serial:    result.SerialNumber,
+		User:      result.User,
+		To:        result.DesiredName,
+		Rule:      result.Rule,
+		Status:    result.Status,
+		Reason:    result.Reason,
+		Action:    result.Action,
 	}
 }
 
 func logResult(logger *slog.Logger, result app.Result) {
 	attributes := []any{
 		"source", result.Source,
+		"namespace", result.Namespace,
 		"id", result.ID,
 		"device", result.CurrentName,
 		"platform", result.Platform,

@@ -18,6 +18,7 @@ func TestFileStoreRoundTrip(t *testing.T) {
 	}
 	intent := Intent{
 		Source:       "intune",
+		Namespace:    "managed_devices",
 		DeviceID:     "device",
 		SerialNumber: "SERIAL",
 		DesiredName:  "NEW",
@@ -76,8 +77,8 @@ func TestFileStoreRejectsMalformedOrUnknownState(t *testing.T) {
 
 	for name, contents := range map[string]string{
 		"malformed":     `{`,
-		"unknown field": `{"version":1,"intents":[],"secret":"nope"}`,
-		"wrong version": `{"version":2,"intents":[]}`,
+		"unknown field": `{"version":2,"intents":[],"secret":"nope"}`,
+		"wrong version": `{"version":1,"intents":[]}`,
 	} {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
@@ -100,7 +101,7 @@ func TestOpenRejectsSemanticallyInvalidFile(t *testing.T) {
 	t.Parallel()
 
 	path := filepath.Join(t.TempDir(), "state.json")
-	contents := `{"version":1,"intents":[{"source":"intune","device_id":"device"}]}`
+	contents := `{"version":2,"intents":[{"source":"intune","namespace":"managed_devices","device_id":"device"}]}`
 	if err := os.WriteFile(path, []byte(contents), 0o600); err != nil {
 		t.Fatalf("write state: %v", err)
 	}

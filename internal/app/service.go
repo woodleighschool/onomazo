@@ -120,7 +120,7 @@ func (s *Service) Reconcile(ctx context.Context, apply bool) ([]Result, error) {
 	devicesByKey := make(map[state.Key]domain.Device, len(devices))
 	for index, device := range devices {
 		records[index] = planner.Record{Device: device, User: users[device.UserID]}
-		devicesByKey[state.Key{Source: device.Source, DeviceID: device.ID}] = device
+		devicesByKey[deviceKey(device)] = device
 	}
 	items, err := s.planner.Plan(records)
 	if err != nil {
@@ -163,6 +163,9 @@ func (s *Service) listDevices(ctx context.Context) ([]domain.Device, error) {
 			if device.ID == "" {
 				return nil, fmt.Errorf("list %s devices: device ID is required", result.name)
 			}
+			if device.Namespace == "" {
+				return nil, fmt.Errorf("list %s devices: device namespace is required", result.name)
+			}
 			device.Source = result.name
 		}
 		bySource[result.name] = result.devices
@@ -178,7 +181,7 @@ func (s *Service) refreshDevices(fresh []domain.Device, now time.Time) []domain.
 	active := make(map[state.Key]struct{}, len(fresh))
 	devices := make([]domain.Device, 0, len(fresh))
 	for _, incoming := range fresh {
-		key := state.Key{Source: incoming.Source, DeviceID: incoming.ID}
+		key := deviceKey(incoming)
 		active[key] = struct{}{}
 		cached, found := s.devices[key]
 		identityChanged := found && (cached.device.SerialNumber != incoming.SerialNumber ||
@@ -256,11 +259,17 @@ func (s *Service) apply(
 			return results, err
 		}
 		result := &results[index]
-		key := state.Key{Source: result.Source, DeviceID: result.ID}
+		key := itemKey(result.Item)
 		stateSerial := stateSerialNumber(result.ID, result.SerialNumber)
 		if result.Status != planner.StatusRename {
 			if _, err := s.ledger.Observe(key, stateSerial, result.CurrentName); err != nil {
-				return nil, fmt.Errorf("observe rename state for %s/%s: %w", result.Source, result.ID, err)
+				return nil, fmt.Errorf(
+					"observe rename state for %s/%s/%s: %w",
+					result.Source,
+					result.Namespace,
+					result.ID,
+					err,
+				)
 			}
 			continue
 		}
@@ -274,7 +283,13 @@ func (s *Service) apply(
 			s.renameMaxAttempts,
 		)
 		if err != nil {
-			return nil, fmt.Errorf("prepare rename for %s/%s: %w", result.Source, result.ID, err)
+			return nil, fmt.Errorf(
+				"prepare rename for %s/%s/%s: %w",
+				result.Source,
+				result.Namespace,
+				result.ID,
+				err,
+			)
 		}
 		result.Attempts = decision.Attempts
 		result.RetryAt = decision.RetryAt
@@ -291,7 +306,13 @@ func (s *Service) apply(
 		case state.DispositionObserved:
 			result.Action = ""
 		default:
-			return nil, fmt.Errorf("prepare rename for %s/%s: unknown disposition %q", result.Source, result.ID, decision.Disposition)
+			return nil, fmt.Errorf(
+				"prepare rename for %s/%s/%s: unknown disposition %q",
+				result.Source,
+				result.Namespace,
+				result.ID,
+				decision.Disposition,
+			)
 		}
 	}
 
@@ -323,7 +344,13 @@ func (s *Service) apply(
 	var renameErrors []error
 	for _, result := range results {
 		if result.Error != "" {
-			renameErrors = append(renameErrors, fmt.Errorf("rename %s/%s: %s", result.Source, result.ID, result.Error))
+			renameErrors = append(renameErrors, fmt.Errorf(
+				"rename %s/%s/%s: %s",
+				result.Source,
+				result.Namespace,
+				result.ID,
+				result.Error,
+			))
 		}
 	}
 	return results, errors.Join(renameErrors...)
@@ -344,7 +371,7 @@ func (s *Service) submitRename(
 	result.Error = err.Error()
 	result.Action = ActionPending
 	if isPermanentRenameError(source, err) {
-		key := state.Key{Source: result.Source, DeviceID: result.ID}
+		key := itemKey(result.Item)
 		stateSerial := stateSerialNumber(result.ID, result.SerialNumber)
 		if stateErr := s.ledger.MarkFailed(key, stateSerial, result.DesiredName, err.Error()); stateErr != nil {
 			result.Error = errors.Join(err, stateErr).Error()
@@ -362,6 +389,14 @@ func stateSerialNumber(deviceID, serialNumber string) string {
 		return serialNumber
 	}
 	return "provider-id:" + deviceID
+}
+
+func deviceKey(device domain.Device) state.Key {
+	return state.Key{Source: device.Source, Namespace: device.Namespace, DeviceID: device.ID}
+}
+
+func itemKey(item planner.Item) state.Key {
+	return state.Key{Source: item.Source, Namespace: item.Namespace, DeviceID: item.ID}
 }
 
 func isPermanentRenameError(source DeviceSource, err error) bool {

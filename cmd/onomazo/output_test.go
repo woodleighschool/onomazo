@@ -15,6 +15,7 @@ func TestWriteJSONPlanKeepsBaselineComparisonFields(t *testing.T) {
 	result := app.Result{
 		Item: planner.Item{
 			Source:       "fixture",
+			Namespace:    "devices",
 			ID:           "device-1",
 			SerialNumber: "SERIAL-1",
 			Platform:     "ios",
@@ -36,15 +37,16 @@ func TestWriteJSONPlanKeepsBaselineComparisonFields(t *testing.T) {
 		t.Fatalf("decode plan: %v", err)
 	}
 	want := map[string]string{
-		"msg":      "device rename planned",
-		"device":   "OLD-NAME",
-		"platform": "ios",
-		"serial":   "SERIAL-1",
-		"user":     "unit@example.invalid",
-		"to":       "NEW-NAME",
-		"rule":     "fixture-rule",
-		"status":   "rename",
-		"action":   "planned",
+		"msg":       "device rename planned",
+		"namespace": "devices",
+		"device":    "OLD-NAME",
+		"platform":  "ios",
+		"serial":    "SERIAL-1",
+		"user":      "unit@example.invalid",
+		"to":        "NEW-NAME",
+		"rule":      "fixture-rule",
+		"status":    "rename",
+		"action":    "planned",
 	}
 	for field, wantValue := range want {
 		if got := record[field]; got != wantValue {

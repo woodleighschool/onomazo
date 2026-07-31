@@ -15,6 +15,13 @@ import (
 
 const jamfPageSize = 1000
 
+const (
+	// ComputerNamespace identifies Jamf's computer inventory ID space.
+	ComputerNamespace = "computers"
+	// MobileDeviceNamespace identifies Jamf's mobile-device ID space.
+	MobileDeviceNamespace = "mobile_devices"
+)
+
 // ListComputers returns a provider-neutral snapshot from the Jamf Pro v4 computer inventory API.
 func (c *Client) ListComputers(ctx context.Context, source string) ([]domain.Device, error) {
 	if err := validateInventoryRequest(c, source); err != nil {
@@ -146,6 +153,7 @@ type computerRecord struct {
 func (r computerRecord) device(source string) domain.Device {
 	return domain.Device{
 		Source:       source,
+		Namespace:    ComputerNamespace,
 		ID:           r.ID,
 		CurrentName:  r.General.Name,
 		SerialNumber: r.Hardware.SerialNumber,
@@ -190,6 +198,7 @@ type mobileRecord struct {
 func (r mobileRecord) device(source string) domain.Device {
 	return domain.Device{
 		Source:       source,
+		Namespace:    MobileDeviceNamespace,
 		ID:           r.MobileDeviceID,
 		CurrentName:  r.General.DisplayName,
 		SerialNumber: r.Hardware.SerialNumber,

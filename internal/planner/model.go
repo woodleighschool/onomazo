@@ -25,6 +25,7 @@ const (
 // Item is the deterministic plan entry emitted for one discovered device.
 type Item struct {
 	Source       string `json:"source"`
+	Namespace    string `json:"namespace"`
 	ID           string `json:"id"`
 	SerialNumber string `json:"serial_number"`
 	Platform     string `json:"platform"`

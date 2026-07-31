@@ -5,6 +5,7 @@ import "time"
 // Device is the provider-neutral device record used by naming expressions.
 type Device struct {
 	Source       string            `cel:"source"        json:"source"`
+	Namespace    string            `cel:"namespace"     json:"namespace"`
 	ID           string            `cel:"id"            json:"id"`
 	CurrentName  string            `cel:"current_name"  json:"current_name"`
 	SerialNumber string            `cel:"serial_number" json:"serial_number"`

@@ -33,7 +33,7 @@ Configuration is strict: unknown fields, invalid provider combinations, and mist
 
 Naming expressions receive these typed values:
 
-- `device`: `source`, `id`, `current_name`, `serial_number`, `platform`, `enrolled_at`, `user_id`, `model`, `os_version`, `last_seen_at`, and `attributes`.
+- `device`: `source`, `namespace`, `id`, `current_name`, `serial_number`, `platform`, `enrolled_at`, `user_id`, `model`, `os_version`, `last_seen_at`, and `attributes`.
 - `user`: `present`, `id`, `mail_nickname`, `user_principal_name`, `display_name`, `department`, `groups`, and `attributes`.
 - `vars`: string values produced by the configured variable cases.
 - `slug(string)`: normalises a value for use in a device name.

@@ -15,7 +15,10 @@ import (
 	"github.com/woodleighschool/onomazo/internal/domain"
 )
 
-const graphPageSize int32 = 999
+const (
+	graphPageSize          int32 = 999
+	managedDeviceNamespace       = "managed_devices"
+)
 
 // ListIntuneDevices returns a provider-neutral snapshot using one paged managedDevices query.
 func (c *Client) ListIntuneDevices(ctx context.Context, source string) ([]domain.Device, error) {
@@ -68,6 +71,7 @@ func (c *Client) ListIntuneDevices(ctx context.Context, source string) ([]domain
 		}
 		converted := domain.Device{
 			Source:       source,
+			Namespace:    managedDeviceNamespace,
 			ID:           dereference(device.GetId()),
 			CurrentName:  dereference(device.GetDeviceName()),
 			SerialNumber: dereference(device.GetSerialNumber()),

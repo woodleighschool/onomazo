@@ -12,7 +12,7 @@ import (
 	"github.com/gofrs/flock"
 )
 
-const fileVersion = 1
+const fileVersion = 2
 
 // FileStore persists intentions as an atomically replaced JSON document.
 type FileStore struct {

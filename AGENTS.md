@@ -51,7 +51,7 @@ For release-path changes, also check the Docker build and `.goreleaser.yaml`. Do
 
 - `plan` is strictly read-only: no provider mutations, rename-intent updates, or writer lock.
 - Build one complete provider snapshot before planning. Collision decisions must be deterministic across all configured sources.
-- A device is identified by source and provider ID; serial number protects persisted state when a provider ID is reused.
+- A device is identified by source, provider resource namespace, and provider ID; serial number protects persisted state when an ID is reused.
 - Never silently truncate a desired name. Invalid names and exhausted collision suffixes remain visible plan outcomes.
 - Persist a rename intention before submitting its request. An unchanged desired name waits for its cooldown instead of hammering the MDM.
 - A changed desired name may supersede an outstanding intention immediately. Observing the desired name clears it; reaching the attempt limit stalls it.

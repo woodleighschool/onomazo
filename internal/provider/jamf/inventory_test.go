@@ -72,6 +72,7 @@ func TestListComputersUsesV4BulkInventoryAndPaging(t *testing.T) {
 	want := []domain.Device{
 		{
 			Source:       "jamf",
+			Namespace:    ComputerNamespace,
 			ID:           "computer-1",
 			CurrentName:  "FIRST",
 			SerialNumber: "SERIAL-1",
@@ -84,6 +85,7 @@ func TestListComputersUsesV4BulkInventoryAndPaging(t *testing.T) {
 		},
 		{
 			Source:       "jamf",
+			Namespace:    ComputerNamespace,
 			ID:           "computer-2",
 			CurrentName:  "SECOND",
 			SerialNumber: "SERIAL-2",
@@ -145,6 +147,7 @@ func TestListMobileDevicesUsesV2BulkInventoryAndSkipsUnsupportedPlatforms(t *tes
 	}
 	want := []domain.Device{{
 		Source:       "jamf",
+		Namespace:    MobileDeviceNamespace,
 		ID:           "mobile-1",
 		CurrentName:  "FIXTURE-IPAD",
 		SerialNumber: "MOBILE-SERIAL-1",
