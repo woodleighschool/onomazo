@@ -422,6 +422,8 @@ func evalRank(program expression.Program, input expression.Input) (rankValue, er
 	}
 	result := rankValue{kind: program.Kind()}
 	switch program.Kind() {
+	case expression.KindBool:
+		return rankValue{}, fmt.Errorf("boolean collision rank passed validation")
 	case expression.KindInt:
 		integer, ok := value.(int64)
 		if !ok {
@@ -448,6 +450,8 @@ func evalRank(program expression.Program, input expression.Input) (rankValue, er
 
 func compareRank(left, right rankValue) int {
 	switch left.kind {
+	case expression.KindBool:
+		panic("boolean collision rank passed validation")
 	case expression.KindInt:
 		return cmp.Compare(left.integer, right.integer)
 	case expression.KindString:
@@ -455,7 +459,7 @@ func compareRank(left, right rankValue) int {
 	case expression.KindTimestamp:
 		return left.timestamp.Compare(right.timestamp)
 	default:
-		return 0
+		panic("unsupported collision rank type " + string(left.kind))
 	}
 }
 
