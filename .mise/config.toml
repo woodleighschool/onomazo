@@ -48,6 +48,10 @@ run = "golangci-lint run"
 description = "Run Go linters and apply fixes"
 run = "golangci-lint run --fix"
 
+[tasks.lint-fix]
+description = "Run linters and apply fixes"
+depends = ["go-lint-fix"]
+
 [tasks.lint]
 description = "Run linters"
 depends = ["go-lint"]
