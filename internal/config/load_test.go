@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -35,6 +36,57 @@ func TestLoadValidConfig(t *testing.T) {
 	}
 	if got, want := len(config.Programs.Ranks), 1; got != want {
 		t.Errorf("compiled ranks = %d, want %d", got, want)
+	}
+}
+
+func TestLoadMergesOrderedConfigurationFilesBeforeEnvironmentSubstitution(t *testing.T) {
+	t.Parallel()
+
+	directory := t.TempDir()
+	basePath := writeConfigFile(t, directory, "base.yaml", validConfig)
+	groupsPath := writeConfigFile(t, directory, "groups.yaml", `connections:
+  microsoft:
+    client_id: site-client
+
+identity:
+  groups:
+    staff:
+      - site-staff
+    students:
+      - site-students
+`)
+	overridesPath := writeConfigFile(t, directory, "overrides.yaml", `naming:
+  overrides:
+    - name: excluded-site-device
+      when: 'device.serial_number == "SITE-SERIAL"'
+      exclude: true
+`)
+
+	config, err := load([]string{basePath, groupsPath, overridesPath}, func(name string) (string, bool) {
+		value, ok := map[string]string{
+			"TENANT_ID":     "tenant",
+			"CLIENT_SECRET": "secret",
+		}[name]
+		return value, ok
+	})
+	if err != nil {
+		t.Fatalf("load() error = %v", err)
+	}
+
+	if got, want := config.Connections["microsoft"].ClientID, "site-client"; got != want {
+		t.Errorf("client ID = %q, want %q", got, want)
+	}
+	if got, want := config.Identity.Groups["staff"], []string{"site-staff"}; !slices.Equal(got, want) {
+		t.Errorf("staff groups = %v, want %v", got, want)
+	}
+	if got, want := config.Identity.Groups["students"], []string{"site-students"}; !slices.Equal(got, want) {
+		t.Errorf("student groups = %v, want %v", got, want)
+	}
+	if got, want := len(config.Naming.Overrides), 1; got != want {
+		t.Fatalf("overrides = %d, want %d", got, want)
+	}
+	if got, want := config.Naming.Overrides[0].Name, "excluded-site-device"; got != want {
+		t.Errorf("override name = %q, want %q", got, want)
 	}
 }
 
@@ -141,14 +193,21 @@ func TestLoadPreventsVariablesInOverrides(t *testing.T) {
 func loadConfig(t *testing.T, contents string, environment map[string]string) (*Config, error) {
 	t.Helper()
 
-	path := filepath.Join(t.TempDir(), "config.yaml")
-	if err := os.WriteFile(path, []byte(contents), 0o600); err != nil {
-		t.Fatalf("write config: %v", err)
-	}
-	return load(path, func(name string) (string, bool) {
+	path := writeConfigFile(t, t.TempDir(), "config.yaml", contents)
+	return load([]string{path}, func(name string) (string, bool) {
 		value, ok := environment[name]
 		return value, ok
 	})
+}
+
+func writeConfigFile(t *testing.T, directory, name, contents string) string {
+	t.Helper()
+
+	path := filepath.Join(directory, name)
+	if err := os.WriteFile(path, []byte(contents), 0o600); err != nil {
+		t.Fatalf("write config: %v", err)
+	}
+	return path
 }
 
 func standardEnvironment() map[string]string {

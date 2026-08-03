@@ -16,7 +16,7 @@ import (
 )
 
 func newRootCommand() *cobra.Command {
-	var configPath string
+	var configPaths []string
 	command := &cobra.Command{
 		Use:           "onomazo",
 		Short:         "Reconcile managed device names",
@@ -28,25 +28,30 @@ func newRootCommand() *cobra.Command {
 			return command.Help()
 		},
 	}
-	command.PersistentFlags().StringVar(&configPath, "config", "config.yaml", "path to the YAML configuration file")
+	command.PersistentFlags().StringArrayVar(
+		&configPaths,
+		"config",
+		[]string{"config.yaml"},
+		"path to a YAML configuration file; may be repeated in overlay order",
+	)
 	command.AddCommand(
-		newValidateCommand(&configPath),
-		newPlanCommand(&configPath),
-		newRunCommand(&configPath),
+		newValidateCommand(&configPaths),
+		newPlanCommand(&configPaths),
+		newRunCommand(&configPaths),
 		newSchemaCommand(),
 		newVersionCommand(),
 	)
 	return command
 }
 
-func newValidateCommand(configPath *string) *cobra.Command {
+func newValidateCommand(configPaths *[]string) *cobra.Command {
 	return &cobra.Command{
 		Use:   "validate",
 		Short: "Validate configuration and naming expressions",
 		Args:  cobra.NoArgs,
 		RunE: func(command *cobra.Command, _ []string) error {
-			if _, err := config.Load(*configPath); err != nil {
-				return fmt.Errorf("validate %s: %w", *configPath, err)
+			if _, err := config.Load((*configPaths)...); err != nil {
+				return fmt.Errorf("validate configuration: %w", err)
 			}
 			_, err := fmt.Fprintln(command.OutOrStdout(), "configuration valid")
 			return err
@@ -54,7 +59,7 @@ func newValidateCommand(configPath *string) *cobra.Command {
 	}
 }
 
-func newPlanCommand(configPath *string) *cobra.Command {
+func newPlanCommand(configPaths *[]string) *cobra.Command {
 	var output string
 	command := &cobra.Command{
 		Use:   "plan",
@@ -64,9 +69,9 @@ func newPlanCommand(configPath *string) *cobra.Command {
 			if output != "human" && output != "json" {
 				return fmt.Errorf("output must be human or json")
 			}
-			cfg, err := config.Load(*configPath)
+			cfg, err := config.Load((*configPaths)...)
 			if err != nil {
-				return fmt.Errorf("load %s: %w", *configPath, err)
+				return fmt.Errorf("load configuration: %w", err)
 			}
 			service, err := app.Build(cfg, app.BuildReadOnly)
 			if err != nil {
@@ -83,7 +88,7 @@ func newPlanCommand(configPath *string) *cobra.Command {
 	return command
 }
 
-func newRunCommand(configPath *string) *cobra.Command {
+func newRunCommand(configPaths *[]string) *cobra.Command {
 	var once bool
 	var logLevel string
 	command := &cobra.Command{
@@ -95,16 +100,16 @@ func newRunCommand(configPath *string) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			cfg, err := config.Load(*configPath)
+			cfg, err := config.Load((*configPaths)...)
 			if err != nil {
-				return fmt.Errorf("load %s: %w", *configPath, err)
+				return fmt.Errorf("load configuration: %w", err)
 			}
 			service, err := app.Build(cfg, app.BuildApply)
 			if err != nil {
 				return fmt.Errorf("start onomazo: %w", err)
 			}
 			logger := slog.New(slog.NewJSONHandler(command.ErrOrStderr(), &slog.HandlerOptions{Level: level}))
-			logger.Info("Onomazo started", "version", version, "config", *configPath, "once", once)
+			logger.Info("Onomazo started", "version", version, "config", *configPaths, "once", once)
 			if once {
 				return errors.Join(runCycle(command.Context(), service, logger), service.Close())
 			}

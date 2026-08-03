@@ -16,6 +16,9 @@ Start with [`config.example.yaml`](config.example.yaml), then provide credential
 # Parse the configuration and compile every CEL expression.
 onomazo validate --config config.yaml
 
+# Apply optional overlays in order.
+onomazo validate --config config.yaml --config site.yaml
+
 # Fetch live inventory and print a read-only plan.
 onomazo plan --config config.yaml
 onomazo plan --config config.yaml --output json
@@ -29,7 +32,7 @@ onomazo run --config config.yaml
 
 ## Configuration
 
-Configuration is strict: unknown fields, invalid provider combinations, and mistyped CEL fields fail validation. An environment placeholder must occupy a complete scalar, such as `${JAMF_CLIENT_SECRET}`; string interpolation is intentionally unsupported.
+Configuration files are merged in argument order. Mappings merge recursively, while scalars and lists replace earlier values. Environment substitution, strict decoding, defaulting, validation, and CEL compilation happen once after the merge. An environment placeholder must occupy a complete scalar, such as `${JAMF_CLIENT_SECRET}`; string interpolation is intentionally unsupported.
 
 Naming expressions receive these typed values:
 
