@@ -60,25 +60,17 @@ depends = ["go-lint"]
 description = "Format Go code"
 run = "go fmt ./..."
 
-[tasks.repo-format]
-description = "Format repository files"
-run = "oxfmt --write ."
-
 [tasks.go-fmt-check]
 description = "Check Go formatting"
 run = "test -z \"$(gofmt -l .)\" || { gofmt -l .; exit 1; }"
 
-[tasks.repo-fmt-check]
-description = "Check repository formatting"
-run = "oxfmt --check ."
-
 [tasks.format]
 description = "Format code"
-depends = ["go-format", "repo-format"]
+depends = ["go-format"]
 
 [tasks.fmt-check]
 description = "Check formatting"
-depends = ["go-fmt-check", "repo-fmt-check"]
+depends = ["go-fmt-check"]
 
 [tasks.workflow-lint]
 description = "Lint GitHub Actions workflows"
