@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.3](https://github.com/woodleighschool/onomazo/compare/0.0.2...0.0.3) (2026-08-03)
+
+
+### Features
+
+* **config:** support ordered configuration overlays ([bb8209e](https://github.com/woodleighschool/onomazo/commit/bb8209e294c86ed02c7e816a4f94e663da5f1005))
+
 ## [0.0.2](https://github.com/woodleighschool/onomazo/compare/0.0.1...0.0.2) (2026-08-02)
 
 
