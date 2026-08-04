@@ -13,12 +13,12 @@ type Key struct {
 type IntentStatus string
 
 const (
-	IntentPending IntentStatus = "pending"
-	IntentFailed  IntentStatus = "failed"
-	IntentStalled IntentStatus = "stalled"
+	IntentFailed    IntentStatus = "failed"
+	IntentRetrying  IntentStatus = "retrying"
+	IntentSubmitted IntentStatus = "submitted"
 )
 
-// Intent records a rename before the corresponding provider request is submitted.
+// Intent records an outstanding rename request and its submission state.
 type Intent struct {
 	Source       string       `json:"source"`
 	Namespace    string       `json:"namespace"`
@@ -38,7 +38,6 @@ const (
 	DispositionFailed   Disposition = "failed"
 	DispositionObserved Disposition = "observed"
 	DispositionPending  Disposition = "pending"
-	DispositionStalled  Disposition = "stalled"
 	DispositionSubmit   Disposition = "submit"
 )
 

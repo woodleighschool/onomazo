@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-func TestLedgerCooldownRetriesAndStalls(t *testing.T) {
+func TestLedgerDoesNotRetrySubmittedRename(t *testing.T) {
 	t.Parallel()
 
 	store := NewMemoryStore()
@@ -25,6 +25,9 @@ func TestLedgerCooldownRetriesAndStalls(t *testing.T) {
 	}
 	assertDecision(t, decision, DispositionSubmit, 1)
 	assertStoredAttempt(t, store, 1, started)
+	if err := ledger.MarkSubmitted(key, "SERIAL", "NEW"); err != nil {
+		t.Fatalf("MarkSubmitted() error = %v", err)
+	}
 
 	decision, err = ledger.Prepare(key, "SERIAL", "OLD", "NEW", started.Add(time.Minute), cooldown, 2)
 	if err != nil {
@@ -33,24 +36,68 @@ func TestLedgerCooldownRetriesAndStalls(t *testing.T) {
 	assertDecision(t, decision, DispositionPending, 1)
 	assertStoredAttempt(t, store, 1, started)
 
+	decision, err = ledger.Prepare(key, "SERIAL", "OLD", "NEW", started.Add(24*time.Hour), cooldown, 2)
+	if err != nil {
+		t.Fatalf("Prepare() after cooldown error = %v", err)
+	}
+	assertDecision(t, decision, DispositionPending, 1)
+	assertStoredAttempt(t, store, 1, started)
+	intents, err := store.Load()
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+	if got, want := intents[0].Status, IntentSubmitted; got != want {
+		t.Errorf("stored status = %q, want %q", got, want)
+	}
+}
+
+func TestLedgerRetriesFailedSubmissionAndStopsAfterLimit(t *testing.T) {
+	t.Parallel()
+
+	store := NewMemoryStore()
+	ledger, err := Open(store)
+	if err != nil {
+		t.Fatalf("Open() error = %v", err)
+	}
+	key := Key{Source: "intune", Namespace: "managed_devices", DeviceID: "device-1"}
+	started := time.Date(2026, time.July, 31, 0, 0, 0, 0, time.UTC)
+	cooldown := 30 * time.Minute
+
+	decision, err := ledger.Prepare(key, "SERIAL", "OLD", "NEW", started, cooldown, 2)
+	if err != nil {
+		t.Fatalf("Prepare() error = %v", err)
+	}
+	assertDecision(t, decision, DispositionSubmit, 1)
+	if err := ledger.MarkRetrying(key, "SERIAL", "NEW", "provider unavailable"); err != nil {
+		t.Fatalf("MarkRetrying() error = %v", err)
+	}
+
+	decision, err = ledger.Prepare(key, "SERIAL", "OLD", "NEW", started.Add(time.Minute), cooldown, 2)
+	if err != nil {
+		t.Fatalf("Prepare() during cooldown error = %v", err)
+	}
+	assertDecision(t, decision, DispositionPending, 1)
+
 	retriedAt := started.Add(cooldown)
 	decision, err = ledger.Prepare(key, "SERIAL", "OLD", "NEW", retriedAt, cooldown, 2)
 	if err != nil {
 		t.Fatalf("Prepare() retry error = %v", err)
 	}
 	assertDecision(t, decision, DispositionSubmit, 2)
-	assertStoredAttempt(t, store, 2, retriedAt)
+	if err := ledger.MarkRetrying(key, "SERIAL", "NEW", "provider still unavailable"); err != nil {
+		t.Fatalf("MarkRetrying() second error = %v", err)
+	}
 
 	decision, err = ledger.Prepare(key, "SERIAL", "OLD", "NEW", retriedAt.Add(cooldown), cooldown, 2)
 	if err != nil {
-		t.Fatalf("Prepare() stall error = %v", err)
+		t.Fatalf("Prepare() exhausted error = %v", err)
 	}
-	assertDecision(t, decision, DispositionStalled, 2)
-	intents, err := store.Load()
-	if err != nil {
-		t.Fatalf("Load() error = %v", err)
+	assertDecision(t, decision, DispositionFailed, 2)
+	if got, want := decision.Failure, "provider still unavailable"; got != want {
+		t.Errorf("failure = %q, want %q", got, want)
 	}
-	if got, want := intents[0].Status, IntentStalled; got != want {
+	intents := ledger.Snapshot()
+	if got, want := intents[0].Status, IntentFailed; got != want {
 		t.Errorf("stored status = %q, want %q", got, want)
 	}
 }

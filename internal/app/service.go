@@ -18,6 +18,8 @@ import (
 type ledger interface {
 	Prepare(state.Key, string, string, string, time.Time, time.Duration, int) (state.Decision, error)
 	MarkFailed(state.Key, string, string, string) error
+	MarkRetrying(state.Key, string, string, string) error
+	MarkSubmitted(state.Key, string, string) error
 	Observe(state.Key, string, string) (bool, error)
 }
 
@@ -299,8 +301,6 @@ func (s *Service) apply(
 			result.Error = decision.Failure
 		case state.DispositionPending:
 			result.Action = ActionPending
-		case state.DispositionStalled:
-			result.Action = ActionStalled
 		case state.DispositionSubmit:
 			jobs = append(jobs, job{index: index, decision: decision, device: devices[key]})
 		case state.DispositionObserved:
@@ -363,16 +363,22 @@ func (s *Service) submitRename(
 	decision state.Decision,
 ) {
 	source := s.sourcesByName[result.Source]
+	key := itemKey(result.Item)
+	stateSerial := stateSerialNumber(result.ID, result.SerialNumber)
 	err := source.Rename(ctx, device, result.DesiredName)
 	if err == nil {
+		if stateErr := s.ledger.MarkSubmitted(key, stateSerial, result.DesiredName); stateErr != nil {
+			result.Action = ActionSubmitted
+			result.Error = fmt.Errorf("record submitted rename: %w", stateErr).Error()
+			return
+		}
 		result.Action = ActionSubmitted
+		result.RetryAt = time.Time{}
 		return
 	}
 	result.Error = err.Error()
 	result.Action = ActionPending
 	if isPermanentRenameError(source, err) {
-		key := itemKey(result.Item)
-		stateSerial := stateSerialNumber(result.ID, result.SerialNumber)
 		if stateErr := s.ledger.MarkFailed(key, stateSerial, result.DesiredName, err.Error()); stateErr != nil {
 			result.Error = errors.Join(err, stateErr).Error()
 			return
@@ -380,6 +386,9 @@ func (s *Service) submitRename(
 		result.Action = ActionFailed
 		result.RetryAt = time.Time{}
 		return
+	}
+	if stateErr := s.ledger.MarkRetrying(key, stateSerial, result.DesiredName, err.Error()); stateErr != nil {
+		result.Error = errors.Join(err, stateErr).Error()
 	}
 	result.RetryAt = decision.RetryAt
 }

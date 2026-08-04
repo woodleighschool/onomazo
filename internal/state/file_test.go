@@ -24,7 +24,7 @@ func TestFileStoreRoundTrip(t *testing.T) {
 		DesiredName:  "NEW",
 		AttemptedAt:  time.Date(2026, time.July, 31, 0, 0, 0, 0, time.UTC),
 		Attempts:     1,
-		Status:       IntentPending,
+		Status:       IntentSubmitted,
 	}
 	if err := store.Save([]Intent{intent}); err != nil {
 		t.Fatalf("Save() error = %v", err)
@@ -39,6 +39,13 @@ func TestFileStoreRoundTrip(t *testing.T) {
 	}
 	if got, want := loaded[0], intent; got != want {
 		t.Errorf("loaded intent = %#v, want %#v", got, want)
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("ReadFile() error = %v", err)
+	}
+	if !strings.Contains(string(data), `"version": 3`) {
+		t.Errorf("state file = %s, want version 3", data)
 	}
 	info, err := os.Stat(path)
 	if err != nil {
@@ -77,7 +84,7 @@ func TestFileStoreRejectsMalformedOrUnknownState(t *testing.T) {
 
 	for name, contents := range map[string]string{
 		"malformed":     `{`,
-		"unknown field": `{"version":2,"intents":[],"secret":"nope"}`,
+		"unknown field": `{"version":3,"intents":[],"secret":"nope"}`,
 		"wrong version": `{"version":1,"intents":[]}`,
 	} {
 		t.Run(name, func(t *testing.T) {
@@ -97,11 +104,47 @@ func TestFileStoreRejectsMalformedOrUnknownState(t *testing.T) {
 	}
 }
 
+func TestFileStoreLoadsVersion2PendingAndStalledAsSubmitted(t *testing.T) {
+	t.Parallel()
+
+	path := filepath.Join(t.TempDir(), "state.json")
+	contents := `{"version":2,"intents":[
+{"source":"intune","namespace":"managed_devices","device_id":"one","serial_number":"SERIAL-1","desired_name":"NEW-1","attempted_at":"2026-07-31T00:00:00Z","attempts":1,"status":"pending"},
+{"source":"jamf","namespace":"computers","device_id":"two","serial_number":"SERIAL-2","desired_name":"NEW-2","attempted_at":"2026-07-31T00:00:00Z","attempts":3,"status":"stalled"}
+]}`
+	if err := os.WriteFile(path, []byte(contents), 0o600); err != nil {
+		t.Fatalf("write state: %v", err)
+	}
+	store, err := NewFileStore(path)
+	if err != nil {
+		t.Fatalf("NewFileStore() error = %v", err)
+	}
+	intents, err := store.Load()
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+	if got, want := len(intents), 2; got != want {
+		t.Fatalf("loaded intents = %d, want %d", got, want)
+	}
+	for index, intent := range intents {
+		if got, want := intent.Status, IntentSubmitted; got != want {
+			t.Errorf("intent %d status = %q, want %q", index, got, want)
+		}
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("ReadFile() error = %v", err)
+	}
+	if got := string(data); got != contents {
+		t.Errorf("Load() rewrote state file = %q, want unchanged", got)
+	}
+}
+
 func TestOpenRejectsSemanticallyInvalidFile(t *testing.T) {
 	t.Parallel()
 
 	path := filepath.Join(t.TempDir(), "state.json")
-	contents := `{"version":2,"intents":[{"source":"intune","namespace":"managed_devices","device_id":"device"}]}`
+	contents := `{"version":3,"intents":[{"source":"intune","namespace":"managed_devices","device_id":"device"}]}`
 	if err := os.WriteFile(path, []byte(contents), 0o600); err != nil {
 		t.Fatalf("write state: %v", err)
 	}

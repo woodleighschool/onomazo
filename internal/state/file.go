@@ -12,7 +12,12 @@ import (
 	"github.com/gofrs/flock"
 )
 
-const fileVersion = 2
+const (
+	fileVersion         = 3
+	previousFileVersion = 2
+	previousPending     = "pending"
+	previousStalled     = "stalled"
+)
 
 // FileStore persists intentions as an atomically replaced JSON document.
 type FileStore struct {
@@ -103,10 +108,26 @@ func (s *FileStore) Load() ([]Intent, error) {
 		}
 		return nil, fmt.Errorf("decode state file: multiple JSON values are not supported")
 	}
-	if document.Version != fileVersion {
+	switch document.Version {
+	case fileVersion:
+		return append([]Intent(nil), document.Intents...), nil
+	case previousFileVersion:
+		return migrateVersion2Intents(document.Intents), nil
+	default:
 		return nil, fmt.Errorf("state file version must be %d, found %d", fileVersion, document.Version)
 	}
-	return append([]Intent(nil), document.Intents...), nil
+}
+
+func migrateVersion2Intents(intents []Intent) []Intent {
+	migrated := append([]Intent(nil), intents...)
+	for index := range migrated {
+		switch string(migrated[index].Status) {
+		case previousPending, previousStalled:
+			migrated[index].Status = IntentSubmitted
+			migrated[index].Failure = ""
+		}
+	}
+	return migrated
 }
 
 // Save writes a complete snapshot to a temporary file before replacing the configured path.

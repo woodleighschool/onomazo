@@ -40,7 +40,6 @@ const (
 	ActionFailed    Action = "failed"
 	ActionPending   Action = "pending"
 	ActionPlanned   Action = "planned"
-	ActionStalled   Action = "stalled"
 	ActionSubmitted Action = "submitted"
 )
 

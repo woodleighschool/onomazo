@@ -84,7 +84,7 @@ func (l *Ledger) Prepare(
 			DesiredName:  desiredName,
 			AttemptedAt:  now,
 			Attempts:     1,
-			Status:       IntentPending,
+			Status:       IntentRetrying,
 		}
 		if err := l.putLocked(key, intent); err != nil {
 			return Decision{}, err
@@ -93,27 +93,34 @@ func (l *Ledger) Prepare(
 	}
 
 	switch existing.Status {
-	case IntentPending:
+	case IntentSubmitted:
+		return Decision{Disposition: DispositionPending, Attempts: existing.Attempts}, nil
+	case IntentRetrying:
 	case IntentFailed:
 		return Decision{Disposition: DispositionFailed, Attempts: existing.Attempts, Failure: existing.Failure}, nil
-	case IntentStalled:
-		return Decision{Disposition: DispositionStalled, Attempts: existing.Attempts}, nil
 	}
 	retryAt := existing.AttemptedAt.Add(retryAfter)
 	if now.Before(retryAt) {
 		return Decision{Disposition: DispositionPending, Attempts: existing.Attempts, RetryAt: retryAt}, nil
 	}
 	if existing.Attempts >= maxAttempts {
-		existing.Status = IntentStalled
+		existing.Status = IntentFailed
+		if existing.Failure == "" {
+			existing.Failure = fmt.Sprintf("rename submission failed after %d attempts", existing.Attempts)
+		}
 		if err := l.putLocked(key, existing); err != nil {
 			return Decision{}, err
 		}
-		return Decision{Disposition: DispositionStalled, Attempts: existing.Attempts}, nil
+		return Decision{
+			Disposition: DispositionFailed,
+			Attempts:    existing.Attempts,
+			Failure:     existing.Failure,
+		}, nil
 	}
 
 	existing.AttemptedAt = now
 	existing.Attempts++
-	existing.Status = IntentPending
+	existing.Status = IntentRetrying
 	existing.Failure = ""
 	if err := l.putLocked(key, existing); err != nil {
 		return Decision{}, err
@@ -123,6 +130,32 @@ func (l *Ledger) Prepare(
 		Attempts:    existing.Attempts,
 		RetryAt:     now.Add(retryAfter),
 	}, nil
+}
+
+// MarkSubmitted records that the provider accepted the rename request.
+func (l *Ledger) MarkSubmitted(key Key, serialNumber, desiredName string) error {
+	l.mutex.Lock()
+	defer l.mutex.Unlock()
+	intent, found := l.intents[key]
+	if !found || intent.SerialNumber != serialNumber || intent.DesiredName != desiredName {
+		return nil
+	}
+	intent.Status = IntentSubmitted
+	intent.Failure = ""
+	return l.putLocked(key, intent)
+}
+
+// MarkRetrying records a transient provider failure for a later submission attempt.
+func (l *Ledger) MarkRetrying(key Key, serialNumber, desiredName, reason string) error {
+	l.mutex.Lock()
+	defer l.mutex.Unlock()
+	intent, found := l.intents[key]
+	if !found || intent.SerialNumber != serialNumber || intent.DesiredName != desiredName {
+		return nil
+	}
+	intent.Status = IntentRetrying
+	intent.Failure = reason
+	return l.putLocked(key, intent)
 }
 
 // MarkFailed records a non-retryable provider rejection if the completed request is still current.
@@ -224,7 +257,7 @@ func validateIntent(intent Intent) error {
 		return fmt.Errorf("attempted_at and a positive attempts count are required")
 	}
 	switch intent.Status {
-	case IntentPending, IntentFailed, IntentStalled:
+	case IntentFailed, IntentRetrying, IntentSubmitted:
 		return nil
 	default:
 		return fmt.Errorf("status %q is not supported", intent.Status)

@@ -172,7 +172,7 @@ func TestReconcileRefreshesPrimaryUserImmediatelyAndStableDetailsOnTTL(t *testin
 	}
 }
 
-func TestReconcileCooldownPreventsRepeatedRenameSubmissions(t *testing.T) {
+func TestReconcileDoesNotResubmitAcceptedRename(t *testing.T) {
 	t.Parallel()
 	now := time.Date(2026, time.July, 31, 0, 0, 0, 0, time.UTC)
 	desiredName := "NEW"
@@ -210,8 +210,8 @@ func TestReconcileCooldownPreventsRepeatedRenameSubmissions(t *testing.T) {
 
 	now = now.Add(9 * time.Minute)
 	third := mustReconcile(t, service, true)
-	if got, want := third[0].Action, ActionSubmitted; got != want {
-		t.Fatalf("action at retry time = %q, want %q", got, want)
+	if got, want := third[0].Action, ActionPending; got != want {
+		t.Fatalf("action after cooldown = %q, want %q", got, want)
 	}
 	desiredName = "OTHER"
 	now = now.Add(time.Minute)
@@ -219,7 +219,7 @@ func TestReconcileCooldownPreventsRepeatedRenameSubmissions(t *testing.T) {
 	if got, want := fourth[0].Action, ActionSubmitted; got != want {
 		t.Fatalf("changed desired action = %q, want %q", got, want)
 	}
-	if got, want := source.renameCount, 3; got != want {
+	if got, want := source.renameCount, 2; got != want {
 		t.Fatalf("total renames = %d, want %d", got, want)
 	}
 
@@ -491,6 +491,14 @@ func (l *spyLedger) Prepare(
 }
 
 func (*spyLedger) MarkFailed(state.Key, string, string, string) error {
+	return nil
+}
+
+func (*spyLedger) MarkRetrying(state.Key, string, string, string) error {
+	return nil
+}
+
+func (*spyLedger) MarkSubmitted(state.Key, string, string) error {
 	return nil
 }
 
