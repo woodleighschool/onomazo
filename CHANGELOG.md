@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.0](https://github.com/woodleighschool/onomazo/compare/0.0.3...0.1.0) (2026-08-04)
+
+
+### ⚠ BREAKING CHANGES
+
+* **logging:** quiet repeated pending renames
+
+### Bug Fixes
+
+* **config:** remove bootstrap SHA ([5cceba9](https://github.com/woodleighschool/onomazo/commit/5cceba9f5646d289843c53e341078139eeff858b))
+* **logging:** quiet repeated pending renames ([996f507](https://github.com/woodleighschool/onomazo/commit/996f5075dc7fc08568049a366a4855ac11423a7e))
+
 ## [0.0.3](https://github.com/woodleighschool/onomazo/compare/0.0.2...0.0.3) (2026-08-03)
 
 
