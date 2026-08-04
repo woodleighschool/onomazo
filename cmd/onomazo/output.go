@@ -91,7 +91,7 @@ func newPlanOutput(result app.Result) planOutput {
 	}
 }
 
-func logResult(logger *slog.Logger, result app.Result) {
+func logResult(logger *slog.Logger, result app.Result, initialCycle bool) {
 	attributes := []any{
 		"source", result.Source,
 		"namespace", result.Namespace,
@@ -121,7 +121,11 @@ func logResult(logger *slog.Logger, result app.Result) {
 		logger.Info("device rename submitted", attributes...)
 	case app.ActionPending:
 		if result.Error == "" {
-			logger.Info("device rename pending", attributes...)
+			if initialCycle {
+				logger.Info("device rename pending", attributes...)
+			} else {
+				logger.Debug("device rename pending", attributes...)
+			}
 		} else {
 			logger.Warn("device rename attempt failed", attributes...)
 		}

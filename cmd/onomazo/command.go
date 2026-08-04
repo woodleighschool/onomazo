@@ -111,7 +111,7 @@ func newRunCommand(configPaths *[]string) *cobra.Command {
 			logger := slog.New(slog.NewJSONHandler(command.ErrOrStderr(), &slog.HandlerOptions{Level: level}))
 			logger.Info("Onomazo started", "version", version, "config", *configPaths, "once", once)
 			if once {
-				return errors.Join(runCycle(command.Context(), service, logger), service.Close())
+				return errors.Join(runCycle(command.Context(), service, logger, true), service.Close())
 			}
 			runLoop(command.Context(), cfg.Reconcile.PollInterval.Duration, service, logger)
 			return service.Close()
@@ -164,8 +164,10 @@ type reconciler interface {
 }
 
 func runLoop(ctx context.Context, interval time.Duration, service reconciler, logger *slog.Logger) {
+	initialCycle := true
 	for {
-		_ = runCycle(ctx, service, logger)
+		_ = runCycle(ctx, service, logger, initialCycle)
+		initialCycle = false
 		if contextStopped(ctx) {
 			return
 		}
@@ -188,11 +190,11 @@ func contextStopped(ctx context.Context) bool {
 	return ctx.Err() != nil
 }
 
-func runCycle(ctx context.Context, service reconciler, logger *slog.Logger) error {
+func runCycle(ctx context.Context, service reconciler, logger *slog.Logger, initialCycle bool) error {
 	started := time.Now()
 	results, err := service.Reconcile(ctx, true)
 	for _, result := range results {
-		logResult(logger, result)
+		logResult(logger, result, initialCycle)
 	}
 	attributes := []any{
 		"devices", len(results),

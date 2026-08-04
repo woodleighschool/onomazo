@@ -3,6 +3,9 @@ package main
 import (
 	"bytes"
 	"context"
+	"encoding/json"
+	"errors"
+	"io"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -87,6 +90,43 @@ func TestRunLoopCancelsInFlightReconciliation(t *testing.T) {
 	}
 }
 
+func TestRunLoopLogsPendingRenamesAtInfoOnlyOnFirstCycle(t *testing.T) {
+	t.Parallel()
+	ctx, cancel := context.WithCancel(context.Background())
+	service := &twoCycleReconciler{cancel: cancel}
+	var output bytes.Buffer
+	logger := slog.New(slog.NewJSONHandler(&output, &slog.HandlerOptions{Level: slog.LevelDebug}))
+
+	runLoop(ctx, 0, service, logger)
+
+	var levels []string
+	decoder := json.NewDecoder(&output)
+	for {
+		var record struct {
+			Level   string `json:"level"`
+			Message string `json:"msg"`
+		}
+		if err := decoder.Decode(&record); err != nil {
+			if errors.Is(err, io.EOF) {
+				break
+			}
+			t.Fatalf("decode log: %v", err)
+		}
+		if record.Message == "device rename pending" {
+			levels = append(levels, record.Level)
+		}
+	}
+	if got, want := len(levels), 2; got != want {
+		t.Fatalf("pending log records = %d, want %d: %s", got, want, output.String())
+	}
+	if got, want := levels[0], "INFO"; got != want {
+		t.Errorf("first pending log level = %q, want %q", got, want)
+	}
+	if got, want := levels[1], "DEBUG"; got != want {
+		t.Errorf("later pending log level = %q, want %q", got, want)
+	}
+}
+
 type blockingReconciler struct {
 	started chan<- struct{}
 }
@@ -95,6 +135,19 @@ func (r blockingReconciler) Reconcile(ctx context.Context, _ bool) ([]app.Result
 	close(r.started)
 	<-ctx.Done()
 	return nil, ctx.Err()
+}
+
+type twoCycleReconciler struct {
+	cancel context.CancelFunc
+	calls  int
+}
+
+func (r *twoCycleReconciler) Reconcile(context.Context, bool) ([]app.Result, error) {
+	r.calls++
+	if r.calls == 2 {
+		r.cancel()
+	}
+	return []app.Result{{Action: app.ActionPending}}, nil
 }
 
 func writeCommandConfig(t *testing.T, directory, name, contents string) string {
