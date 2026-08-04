@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.1](https://github.com/woodleighschool/onomazo/compare/0.1.0...0.1.1) (2026-08-04)
+
+
+### Bug Fixes
+
+* **ci:** disable automatic mise installs ([14948bf](https://github.com/woodleighschool/onomazo/commit/14948bfa33368dd44b11587c915767712c8e7fdb))
+* **state:** stop retrying accepted renames ([a412bd6](https://github.com/woodleighschool/onomazo/commit/a412bd622b249d7d8712e24a448bfd4a708069d8))
+
 ## [0.1.0](https://github.com/woodleighschool/onomazo/compare/0.0.3...0.1.0) (2026-08-04)
 
 
