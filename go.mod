@@ -8,7 +8,7 @@ require (
 	github.com/google/cel-go v0.30.0
 	github.com/invopop/jsonschema v0.14.0
 	github.com/microsoft/kiota-abstractions-go v1.9.4
-	github.com/microsoftgraph/msgraph-sdk-go v1.100.0
+	github.com/microsoftgraph/msgraph-sdk-go v1.101.0
 	github.com/microsoftgraph/msgraph-sdk-go-core v1.4.1
 	github.com/spf13/cobra v1.10.2
 	gopkg.in/yaml.v3 v3.0.1
