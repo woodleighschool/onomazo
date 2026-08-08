@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.2](https://github.com/woodleighschool/onomazo/compare/0.1.1...0.1.2) (2026-08-08)
+
+
+### Bug Fixes
+
+* **renovate:** wait for complete toolchain groups ([7b228b8](https://github.com/woodleighschool/onomazo/commit/7b228b8c09983fc6aa52b8ca945fd4fc3498c6e3))
+
 ## [0.1.1](https://github.com/woodleighschool/onomazo/compare/0.1.0...0.1.1) (2026-08-04)
 
 
