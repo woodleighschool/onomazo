@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.1.2](https://github.com/woodleighschool/onomazo/compare/0.1.1...0.1.2) (2026-08-12)
+
+
+### Features
+
+* **deps:** update module github.com/google/cel-go (v0.30.0 → v0.31.0) ([#34](https://github.com/woodleighschool/onomazo/issues/34)) ([e2c1d8c](https://github.com/woodleighschool/onomazo/commit/e2c1d8c289d37aa7336648320551a305f8bac604))
+* **deps:** update module github.com/microsoftgraph/msgraph-sdk-go (v1.100.0 → v1.101.0) ([#33](https://github.com/woodleighschool/onomazo/issues/33)) ([e985e6e](https://github.com/woodleighschool/onomazo/commit/e985e6e26a765cbdb3827cc1b7f49f6efab4146e))
+
+
+### Bug Fixes
+
+* **renovate:** wait for complete toolchain groups ([7b228b8](https://github.com/woodleighschool/onomazo/commit/7b228b8c09983fc6aa52b8ca945fd4fc3498c6e3))
+
 ## [0.1.1](https://github.com/woodleighschool/onomazo/compare/0.1.0...0.1.1) (2026-08-04)
 
 
