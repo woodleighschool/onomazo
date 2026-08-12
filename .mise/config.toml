@@ -1,7 +1,9 @@
 [tools]
 go = "1.26.5"
+"go:golang.org/x/vuln/cmd/govulncheck" = "1.6.0"
 golangci-lint = "2.12.2"
 lefthook = "2.1.10"
+actionlint = "1.7.12"
 zizmor = "1.29.0"
 oxfmt = "0.63.0"
 "npm:@commitlint/cli" = "21.2.1"
@@ -12,13 +14,9 @@ pin = true
 lockfile = true
 minimum_release_age = "12 hours"
 
-[tasks.go-deps]
-description = "Download Go dependencies"
-run = "go mod download"
-
 [tasks.deps]
 description = "Install dependencies"
-depends = ["go-deps"]
+run = "go mod download"
 
 [tasks.build]
 description = "Build application"
@@ -32,6 +30,10 @@ run = "go mod tidy"
 description = "Check the Go module is tidy"
 run = "go mod tidy -diff"
 
+[tasks.vulncheck]
+description = "Scan for known vulnerabilities with govulncheck"
+run = "govulncheck ./..."
+
 [tasks.generate]
 description = "Generate committed artifacts"
 run = "go generate ./internal/config"
@@ -40,41 +42,25 @@ run = "go generate ./internal/config"
 description = "Run dependency-free Go checks"
 run = ["go vet ./...", "go test -race -count=1 ./..."]
 
-[tasks.go-lint]
-description = "Run Go linters"
-run = "golangci-lint run"
-
-[tasks.go-lint-fix]
-description = "Run Go linters and apply fixes"
-run = "golangci-lint run --fix"
-
 [tasks.lint-fix]
 description = "Run linters and apply fixes"
-depends = ["go-lint-fix"]
+run = "golangci-lint run --fix"
 
 [tasks.lint]
 description = "Run linters"
-depends = ["go-lint"]
+run = "golangci-lint run"
 
-[tasks.go-format]
+[tasks.format]
 description = "Format Go code"
 run = "go fmt ./..."
 
-[tasks.go-fmt-check]
+[tasks.fmt-check]
 description = "Check Go formatting"
 run = "test -z \"$(gofmt -l .)\" || { gofmt -l .; exit 1; }"
 
-[tasks.format]
-description = "Format code"
-depends = ["go-format"]
-
-[tasks.fmt-check]
-description = "Check formatting"
-depends = ["go-fmt-check"]
-
 [tasks.workflow-lint]
 description = "Lint GitHub Actions workflows"
-run = "zizmor --offline --no-ignores .github/workflows"
+run = ["actionlint", "zizmor --offline --no-ignores .github/workflows"]
 
 [tasks.clean]
 description = "Remove local build outputs"

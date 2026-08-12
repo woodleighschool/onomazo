@@ -1,6 +1,6 @@
 ---
 # yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
-name: Tests
+name: CI
 
 on:
   push:
@@ -18,8 +18,8 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -29,9 +29,10 @@ env:
   MISE_TASK_RUN_AUTO_INSTALL: "false"
 
 jobs:
-  go-test:
-    name: Go Tests
+  backend:
+    name: Backend
     runs-on: ubuntu-24.04
+    timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -42,7 +43,7 @@ jobs:
         uses: jdx/mise-action@7e36c90d9ab29c415a2384db3006f3ec8a8cc654 # v4.2.4
         with:
           experimental: true
-          install_args: --locked go
+          install_args: --locked go golangci-lint actionlint zizmor
 
       - name: Cache Go modules and build
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
@@ -52,16 +53,50 @@ jobs:
             ~/go/pkg/mod
           key: ${{ runner.os }}-go-${{ hashFiles('go.sum') }}
           restore-keys: ${{ runner.os }}-go-
+
+      - name: Cache golangci-lint
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/golangci-lint
+          key: ${{ runner.os }}-golangci-lint-${{ hashFiles('go.sum', '.golangci.yml', '.mise/mise.lock') }}
+
+      - name: Check Go formatting
+        run: mise run fmt-check
 
       - name: Check Go module tidiness
         run: mise run tidy-check
 
+      - name: Run Go lint
+        run: mise run lint
+
+      - name: Lint workflows
+        run: mise run workflow-lint
+
+      - name: Regenerate committed artifacts
+        run: mise run generate
+
+      - name: Check generated artifacts are committed
+        run: |
+          generated_status=$(git status --short --untracked-files=all -- onomazo.schema.json)
+          test -z "$generated_status" || {
+            printf '%s\n' "$generated_status"
+            git diff -- onomazo.schema.json
+            exit 1
+          }
+
       - name: Run dependency-free Go checks
         run: mise run test
 
-  build:
-    name: Build
+      - name: Build application
+        run: mise run build
+
+  go-vulncheck:
+    if: >-
+      ${{ !(startsWith(github.head_ref, 'release-please--')
+      && github.event.pull_request.head.repo.full_name == github.repository) }}
+    name: Go Vulncheck
     runs-on: ubuntu-24.04
+    timeout-minutes: 10
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -72,16 +107,7 @@ jobs:
         uses: jdx/mise-action@7e36c90d9ab29c415a2384db3006f3ec8a8cc654 # v4.2.4
         with:
           experimental: true
-          install_args: --locked go
+          install_args: --locked go go:golang.org/x/vuln/cmd/govulncheck
 
-      - name: Cache Go modules and build
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('go.sum') }}
-          restore-keys: ${{ runner.os }}-go-
-
-      - name: Build application
-        run: mise run build
+      - name: Run govulncheck
+        run: mise run vulncheck
