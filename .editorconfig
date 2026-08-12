@@ -17,6 +17,15 @@ trim_trailing_whitespace = false
 [Dockerfile]
 indent_size = 4
 
+[*.py]
+indent_size = 4
+
+[{*.sh,*.bash}]
+indent_size = 4
+
+[{*.just,*.justfile}]
+indent_size = 4
+
 [{Makefile,*.mk}]
 indent_style = tab
 indent_size = 4

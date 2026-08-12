@@ -1,26 +1,38 @@
+# Go binaries and test artifacts
 *.exe
-*.exe~
 *.dll
 *.dylib
 *.test
 *.out
 
-vendor/
+# Build and tool outputs
+/onomazo
+/bin/
+/dist/
+/tmp/
+/.gocache/
+coverage.out
+
+# Go workspace overrides
 go.work
 go.work.sum
-.gocache/
+/vendor/
 
-bin/
-pkg/
-dist/
-build/
-tmp/
-/onomazo
+# Local Mise overrides
+.mise.local.toml
+.mise.local.lock
 
-config.yaml
+# Local configuration
 .env
 .env.*
+!.env.example
+config.yml
+config.yaml
 
+# Editor and IDE
+.vscode/
+
+# macOS
 .DS_Store
 .AppleDouble
 .LSOverride

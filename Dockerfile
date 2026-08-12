@@ -10,6 +10,8 @@ FROM --platform=$BUILDPLATFORM golang:${GO_VERSION}-alpine AS builder
 ARG TARGETOS
 ARG TARGETARCH
 ARG VERSION=dev
+ARG COMMIT=unknown
+ARG DATE=unknown
 
 RUN apk add --no-cache upx
 WORKDIR /workspace
@@ -22,7 +24,8 @@ COPY cmd/ cmd/
 COPY internal/ internal/
 
 RUN CGO_ENABLED=0 GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH} \
-    go build -trimpath -ldflags "-s -w -X main.version=${VERSION}" \
+    go build -trimpath \
+    -ldflags "-s -w -X main.version=${VERSION} -X main.commit=${COMMIT} -X main.date=${DATE}" \
     -o onomazo ./cmd/onomazo
 RUN upx --best --lzma onomazo
 

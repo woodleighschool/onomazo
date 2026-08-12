@@ -23,6 +23,7 @@ jobs:
     permissions:
       contents: read
     outputs:
+      build-date: ${{ steps.versions.outputs.build-date }}
       go-version: ${{ steps.versions.outputs.go-version }}
     steps:
       - name: Checkout
@@ -39,7 +40,11 @@ jobs:
 
       - name: Resolve versions
         id: versions
-        run: echo "go-version=$(mise config get tools.go)" >> "$GITHUB_OUTPUT"
+        run: |
+          {
+            echo "build-date=$(git show -s --format=%cI HEAD)"
+            echo "go-version=$(mise config get tools.go)"
+          } >> "$GITHUB_OUTPUT"
 
   release:
     name: Release
@@ -52,6 +57,8 @@ jobs:
     with:
       build-args: |
         VERSION=${{ github.ref_name }}
+        COMMIT=${{ github.sha }}
+        DATE=${{ needs.versions.outputs.build-date }}
         GO_VERSION=${{ needs.versions.outputs.go-version }}
       cache: true
       meta-images: ghcr.io/${{ github.repository }}
