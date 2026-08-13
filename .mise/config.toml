@@ -6,7 +6,7 @@ lefthook = "2.1.10"
 actionlint = "1.7.12"
 zizmor = "1.29.0"
 oxfmt = "0.63.0"
-"npm:@commitlint/cli" = "21.2.1"
+"npm:@commitlint/cli" = "21.2.2"
 
 [settings]
 experimental = true
