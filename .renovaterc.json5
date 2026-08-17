@@ -12,7 +12,7 @@
       matchManagers: ["dockerfile", "gomod", "mise"],
       matchDepNames: ["go", "golang"],
       matchFileNames: ["Dockerfile", "go.mod", ".mise/config.toml"],
-      minimumGroupSize: 3,
+      minimumGroupSize: 2,
     },
   ],
 }

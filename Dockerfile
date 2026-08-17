@@ -1,11 +1,9 @@
 # syntax=docker/dockerfile:1
 
-# Defaults keep local builds self-contained. Renovate updates this alongside
-# the matching Mise and module pins.
-ARG GO_VERSION=1.26.5
+# Keep the container toolchain aligned with Mise. Renovate updates both.
 
 # ---- Go build -------------------------------------------------------------
-FROM --platform=$BUILDPLATFORM golang:${GO_VERSION}-alpine AS builder
+FROM --platform=$BUILDPLATFORM golang:1.26.6-alpine AS builder
 
 ARG TARGETOS
 ARG TARGETARCH
