@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.3](https://github.com/woodleighschool/onomazo/compare/0.1.2...0.1.3) (2026-08-17)
+
+
+### Bug Fixes
+
+* **tooling:** group toolchain updates ([58ae5a4](https://github.com/woodleighschool/onomazo/commit/58ae5a4e50dc77e4b65cf1f692e8e2679023c8d3))
+
 ## [0.1.2](https://github.com/woodleighschool/onomazo/compare/0.1.1...0.1.2) (2026-08-12)
 
 
