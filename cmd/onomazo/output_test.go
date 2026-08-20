@@ -13,20 +13,18 @@ import (
 func TestWriteJSONPlanKeepsBaselineComparisonFields(t *testing.T) {
 	t.Parallel()
 	result := app.Result{
-		Item: planner.Item{
-			Source:       "fixture",
-			Namespace:    "devices",
-			ID:           "device-1",
-			SerialNumber: "SERIAL-1",
-			Platform:     "ios",
-			CurrentName:  "OLD-NAME",
-			DesiredName:  "NEW-NAME",
-			User:         "unit@example.invalid",
-			Rule:         "fixture-rule",
-			Status:       planner.StatusRename,
-			Reason:       "name differs",
-		},
-		Action: app.ActionPlanned,
+		Source:       "fixture",
+		Namespace:    "devices",
+		ID:           "device-1",
+		SerialNumber: "SERIAL-1",
+		Platform:     "ios",
+		CurrentName:  "OLD-NAME",
+		DesiredName:  "NEW-NAME",
+		User:         "unit@example.invalid",
+		Rule:         "fixture-rule",
+		Status:       planner.StatusRename,
+		Reason:       "name differs",
+		Action:       app.ActionPlanned,
 	}
 	var output bytes.Buffer
 	if err := writePlan(&output, "json", []app.Result{result}); err != nil {
@@ -58,7 +56,7 @@ func TestWriteJSONPlanKeepsBaselineComparisonFields(t *testing.T) {
 func TestWriteHumanPlanUsesAlignedColumns(t *testing.T) {
 	t.Parallel()
 	results := []app.Result{
-		{Item: planner.Item{
+		{
 			Source:       "intune",
 			ID:           "device-1",
 			SerialNumber: "SERIAL-1",
@@ -68,9 +66,8 @@ func TestWriteHumanPlanUsesAlignedColumns(t *testing.T) {
 			User:         "unit@example.invalid",
 			Rule:         "fixture-rule",
 			Status:       planner.StatusRename,
-			Reason:       "name differs",
-		}},
-		{Item: planner.Item{
+			Reason:       "name differs"},
+		{
 			Source:       "jamf",
 			ID:           "device-2",
 			SerialNumber: "SERIAL-2",
@@ -80,8 +77,7 @@ func TestWriteHumanPlanUsesAlignedColumns(t *testing.T) {
 			User:         "other@example.invalid",
 			Rule:         "fallback",
 			Status:       planner.StatusUnmanaged,
-			Reason:       "no naming rule matched",
-		}},
+			Reason:       "no naming rule matched"},
 	}
 	var output bytes.Buffer
 	if err := writePlan(&output, "human", results); err != nil {
@@ -125,14 +121,13 @@ func TestWriteHumanPlanUsesAlignedColumns(t *testing.T) {
 
 func TestWriteJSONPlanKeepsEmptyComparisonFields(t *testing.T) {
 	t.Parallel()
-	result := app.Result{Item: planner.Item{
+	result := app.Result{
 		Source:       "fixture",
 		ID:           "device-1",
 		SerialNumber: "SERIAL-1",
 		Platform:     "macos",
 		CurrentName:  "FIXTURE",
-		Status:       planner.StatusUnmanaged,
-	}}
+		Status:       planner.StatusUnmanaged}
 	var jsonOutput bytes.Buffer
 	if err := writePlan(&jsonOutput, "json", []app.Result{result}); err != nil {
 		t.Fatalf("writePlan(json) error = %v", err)
