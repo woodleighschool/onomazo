@@ -9,11 +9,24 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"slices"
 	"testing"
 	"time"
 
 	"github.com/woodleighschool/onomazo/internal/app"
 )
+
+func TestDefaultConfigPathsUsesConfigInCurrentDirectory(t *testing.T) {
+	directory := t.TempDir()
+	t.Chdir(directory)
+	if got := defaultConfigPaths(); got != nil {
+		t.Fatalf("defaultConfigPaths() without config = %v, want nil", got)
+	}
+	writeCommandConfig(t, directory, "config.yaml", "version: 1\n")
+	if got, want := defaultConfigPaths(), []string{"config.yaml"}; !slices.Equal(got, want) {
+		t.Fatalf("defaultConfigPaths() = %v, want %v", got, want)
+	}
+}
 
 func TestValidateAcceptsOrderedConfigurationFiles(t *testing.T) {
 	directory := t.TempDir()

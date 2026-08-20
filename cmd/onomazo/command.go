@@ -31,7 +31,7 @@ func newRootCommand() *cobra.Command {
 	command.PersistentFlags().StringArrayVar(
 		&configPaths,
 		"config",
-		[]string{"config.yaml"},
+		defaultConfigPaths(),
 		"path to a YAML configuration file; may be repeated in overlay order",
 	)
 	command.AddCommand(
@@ -42,6 +42,14 @@ func newRootCommand() *cobra.Command {
 		newVersionCommand(),
 	)
 	return command
+}
+
+func defaultConfigPaths() []string {
+	info, err := os.Stat("config.yaml")
+	if err != nil || !info.Mode().IsRegular() {
+		return nil
+	}
+	return []string{"config.yaml"}
 }
 
 func newValidateCommand(configPaths *[]string) *cobra.Command {
