@@ -12,14 +12,14 @@ Planning uses a complete inventory snapshot and resolves collisions deterministi
 
 ## 🚀 Usage
 
-Download an archive from the [latest release](https://github.com/woodleighschool/onomazo/releases/latest), or build it with Mise. Start from [`config.example.yaml`](config.example.yaml):
+Download an archive from the [latest release](https://github.com/woodleighschool/onomazo/releases/latest), or build it with Mise. Start from [`config.example.yaml`](config.example.yaml). If `config.yaml` is present in the current directory, `--config` may be omitted:
 
 ```bash
-onomazo validate --config config.yaml
-onomazo plan --config config.yaml
-onomazo plan --config config.yaml --output json
-onomazo run --config config.yaml --once
-onomazo run --config config.yaml
+onomazo validate
+onomazo plan
+onomazo plan --output json
+onomazo run --once
+onomazo run
 ```
 
 Multiple `--config` flags apply overlays in order. `plan` is always read-only.
