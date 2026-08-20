@@ -1,8 +1,14 @@
 # onomazo
 
+> **ὀνομάζω** (_onomázō_) — “to name”
+
 Reconciles device names across Microsoft Intune and Jamf Pro from one YAML policy. It can run once from the command line or continuously as a service.
 
 Planning uses a complete inventory snapshot and resolves collisions deterministically. Rename intentions are recorded so a slow MDM does not receive the same command every poll.
+
+> [!WARNING]
+> This project may be unstable or have bugs, use with caution.
+> Also expect breaking changes between releases for now.
 
 ## 🚀 Usage
 
@@ -50,8 +56,8 @@ File state survives restarts and is written atomically:
 
 ```yaml
 state:
-    type: file
-    path: /var/lib/onomazo/state.json
+  type: file
+  path: /var/lib/onomazo/state.json
 ```
 
 ## 🔄 Reconciliation
