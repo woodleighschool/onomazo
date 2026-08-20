@@ -1,8 +1,5 @@
 {
   $schema: "https://docs.renovatebot.com/renovate-schema.json",
-  extends: [
-    "local>woodleighschool/renovate-config",
-    "local>woodleighschool/renovate-config:autoMerge.json5",
-  ],
+  extends: ["local>woodleighschool/renovate-config"],
   postUpdateOptions: ["gomodTidy", "gomodUpdateImportPaths"],
 }
