@@ -3,9 +3,9 @@ module github.com/woodleighschool/onomazo
 go 1.27.0
 
 require (
+	cel.dev/cel-go v0.32.0
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.14.0
 	github.com/gofrs/flock v0.13.0
-	github.com/google/cel-go v0.31.0
 	github.com/invopop/jsonschema v0.14.0
 	github.com/microsoft/kiota-abstractions-go v1.9.4
 	github.com/microsoftgraph/msgraph-sdk-go v1.101.0
