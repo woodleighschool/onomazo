@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.4](https://github.com/woodleighschool/onomazo/compare/0.1.3...0.1.4) (2026-08-21)
+
+
+### Features
+
+* **container:** update image golang (1.26.6 → 1.27.0) ([#39](https://github.com/woodleighschool/onomazo/issues/39)) ([48fa6bb](https://github.com/woodleighschool/onomazo/commit/48fa6bb3677b621aebd4962b96483b9bb61d11ff))
+
+
+### Documentation
+
+* document cwd config default ([ffbebfb](https://github.com/woodleighschool/onomazo/commit/ffbebfb413bc02dbb4e1b194c4c604f604e99419))
+
 ## [0.1.3](https://github.com/woodleighschool/onomazo/compare/0.1.2...0.1.3) (2026-08-17)
 
 
