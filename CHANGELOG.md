@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.1.5](https://github.com/woodleighschool/onomazo/compare/0.1.4...0.1.5) (2026-08-22)
+
+
+### Code Refactoring
+
+* use typed error extraction ([918b119](https://github.com/woodleighschool/onomazo/commit/918b1192c5c51be7a0871549b1b7e679e7743e32))
+
+
+### Miscellaneous Chores
+
+* align ignore rules ([1c69137](https://github.com/woodleighschool/onomazo/commit/1c6913702523df3c7dd527f058647b07b4e48b6b))
+* align repository conventions ([a15ae2c](https://github.com/woodleighschool/onomazo/commit/a15ae2cc1fd9a289ef2e0521e403a4aa75060759))
+* **release-please:** sync configuration ([88c3ad4](https://github.com/woodleighschool/onomazo/commit/88c3ad41c3af3f20a99593d64ed302e2fbad37cc))
+
 ## [0.1.4](https://github.com/woodleighschool/onomazo/compare/0.1.3...0.1.4) (2026-08-21)
 
 
