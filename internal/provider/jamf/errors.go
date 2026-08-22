@@ -29,8 +29,8 @@ func newHTTPError(status int, body []byte) error {
 
 // StatusCode extracts an HTTP status from a Jamf API error.
 func StatusCode(err error) (int, bool) {
-	var apiError *httpError
-	if !errors.As(err, &apiError) {
+	apiError, ok := errors.AsType[*httpError](err)
+	if !ok {
 		return 0, false
 	}
 	return apiError.status, true

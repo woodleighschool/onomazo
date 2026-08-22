@@ -403,8 +403,8 @@ func (s *fakeSource) Rename(_ context.Context, device domain.Device, _ string) e
 }
 
 func (*fakeSource) StatusCode(err error) (int, bool) {
-	var statusErr statusError
-	if !errors.As(err, &statusErr) {
+	statusErr, ok := errors.AsType[statusError](err)
+	if !ok {
 		return 0, false
 	}
 	return statusErr.status, true
