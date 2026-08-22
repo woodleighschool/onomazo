@@ -6,7 +6,7 @@ import (
 	"github.com/woodleighschool/onomazo/internal/expression"
 )
 
-// Config is Onomazo's complete versioned configuration.
+// Config is the complete versioned configuration.
 type Config struct {
 	Version     int                   `yaml:"version"     jsonschema:"enum=1"`
 	Connections map[string]Connection `yaml:"connections" jsonschema:"minProperties=1"`

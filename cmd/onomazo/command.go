@@ -83,7 +83,7 @@ func newPlanCommand(configPaths *[]string) *cobra.Command {
 			}
 			service, err := app.Build(cfg, app.BuildReadOnly)
 			if err != nil {
-				return fmt.Errorf("start onomazo: %w", err)
+				return fmt.Errorf("start service: %w", err)
 			}
 			results, err := service.Reconcile(command.Context(), false)
 			if err != nil {
@@ -114,10 +114,10 @@ func newRunCommand(configPaths *[]string) *cobra.Command {
 			}
 			service, err := app.Build(cfg, app.BuildApply)
 			if err != nil {
-				return fmt.Errorf("start onomazo: %w", err)
+				return fmt.Errorf("start service: %w", err)
 			}
 			logger := slog.New(slog.NewJSONHandler(command.ErrOrStderr(), &slog.HandlerOptions{Level: level}))
-			logger.Info("Onomazo started", "version", version, "config", *configPaths, "once", once)
+			logger.Info("service started", "version", version, "config", *configPaths, "once", once)
 			if once {
 				return errors.Join(runCycle(command.Context(), service, logger, true), service.Close())
 			}

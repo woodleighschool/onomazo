@@ -18,7 +18,7 @@ const (
 	userTypeName   = "domain.User"
 )
 
-// Compiler validates and compiles naming expressions against Onomazo's CEL contract.
+// Compiler validates and compiles naming expressions against the CEL contract.
 type Compiler struct {
 	baseEnvironment *cel.Env
 	ruleEnvironment *cel.Env

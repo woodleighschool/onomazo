@@ -68,7 +68,7 @@ func NewLockedFileStore(path string) (*FileStore, error) {
 	}
 	if !locked {
 		_ = store.lock.Close()
-		return nil, fmt.Errorf("state file is locked by another onomazo process")
+		return nil, fmt.Errorf("state file is locked by another process")
 	}
 	return store, nil
 }
