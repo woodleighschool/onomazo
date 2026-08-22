@@ -33,6 +33,8 @@ docker run --rm \
   run --config /config.yaml
 ```
 
+Daemon mode writes structured JSON to stderr. Lifecycle and material reconciliation events use `info`, warnings and failures use `warn` or `error`, and successful cycle summaries plus routine no-op evaluations use `debug`.
+
 ## ⚙️ Configuration
 
 Configuration is strict: unknown fields fail, lists replace earlier lists, and mappings merge recursively. Environment placeholders must occupy the whole value, such as `${JAMF_CLIENT_SECRET}`.

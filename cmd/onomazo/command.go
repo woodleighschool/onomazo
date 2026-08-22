@@ -1,13 +1,11 @@
 package main
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"log/slog"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/spf13/cobra"
 
@@ -165,57 +163,6 @@ func newVersionCommand() *cobra.Command {
 			return err
 		},
 	}
-}
-
-type reconciler interface {
-	Reconcile(context.Context, bool) ([]app.Result, error)
-}
-
-func runLoop(ctx context.Context, interval time.Duration, service reconciler, logger *slog.Logger) {
-	initialCycle := true
-	for {
-		_ = runCycle(ctx, service, logger, initialCycle)
-		initialCycle = false
-		if contextStopped(ctx) {
-			return
-		}
-		timer := time.NewTimer(interval)
-		select {
-		case <-ctx.Done():
-			if !timer.Stop() {
-				select {
-				case <-timer.C:
-				default:
-				}
-			}
-			return
-		case <-timer.C:
-		}
-	}
-}
-
-func contextStopped(ctx context.Context) bool {
-	return ctx.Err() != nil
-}
-
-func runCycle(ctx context.Context, service reconciler, logger *slog.Logger, initialCycle bool) error {
-	started := time.Now()
-	results, err := service.Reconcile(ctx, true)
-	for _, result := range results {
-		logResult(logger, result, initialCycle)
-	}
-	attributes := []any{
-		"devices", len(results),
-		"renames_submitted", countAction(results, app.ActionSubmitted),
-		"renames_pending", countAction(results, app.ActionPending),
-		"duration", time.Since(started),
-	}
-	if err != nil {
-		logger.ErrorContext(ctx, "reconciliation failed", append(attributes, "error", err)...)
-	} else {
-		logger.InfoContext(ctx, "reconciliation complete", attributes...)
-	}
-	return err
 }
 
 func parseLogLevel(value string) (slog.Level, error) {

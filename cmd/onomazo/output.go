@@ -4,9 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log/slog"
 	"text/tabwriter"
-	"time"
 
 	"github.com/woodleighschool/onomazo/internal/app"
 	"github.com/woodleighschool/onomazo/internal/planner"
@@ -89,67 +87,4 @@ func newPlanOutput(result app.Result) planOutput {
 		Reason:    result.Reason,
 		Action:    result.Action,
 	}
-}
-
-func logResult(logger *slog.Logger, result app.Result, initialCycle bool) {
-	attributes := []any{
-		"source", result.Source,
-		"namespace", result.Namespace,
-		"id", result.ID,
-		"device", result.CurrentName,
-		"platform", result.Platform,
-		"serial", result.SerialNumber,
-		"user", result.User,
-		"to", result.DesiredName,
-		"rule", result.Rule,
-		"status", result.Status,
-		"action", result.Action,
-	}
-	if result.Attempts != 0 {
-		attributes = append(attributes, "attempts", result.Attempts)
-	}
-	if !result.RetryAt.IsZero() {
-		attributes = append(attributes, "retry_at", result.RetryAt.Format(time.RFC3339))
-	}
-	if result.Error != "" {
-		attributes = append(attributes, "error", result.Error)
-	}
-	switch result.Action {
-	case app.ActionPlanned:
-		logger.Info("device rename planned", attributes...)
-	case app.ActionSubmitted:
-		if result.Error == "" {
-			logger.Info("device rename submitted", attributes...)
-		} else {
-			logger.Warn("device rename submitted but state update failed", attributes...)
-		}
-	case app.ActionPending:
-		if result.Error == "" {
-			if initialCycle {
-				logger.Info("device rename pending", attributes...)
-			} else {
-				logger.Debug("device rename pending", attributes...)
-			}
-		} else {
-			logger.Warn("device rename attempt failed", attributes...)
-		}
-	case app.ActionFailed:
-		logger.Warn("device rename failed", attributes...)
-	default:
-		if result.Status == planner.StatusInvalid || result.Status == planner.StatusUnresolved {
-			logger.Warn("device naming issue", append(attributes, "reason", result.Reason)...)
-		} else {
-			logger.Debug("device evaluated", append(attributes, "reason", result.Reason)...)
-		}
-	}
-}
-
-func countAction(results []app.Result, action app.Action) int {
-	count := 0
-	for _, result := range results {
-		if result.Action == action {
-			count++
-		}
-	}
-	return count
 }
