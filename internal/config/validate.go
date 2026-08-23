@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"log/slog"
 	"net/url"
 	"regexp"
 	"slices"
@@ -17,6 +18,9 @@ const supportedVersion = 1
 var identifierPattern = regexp.MustCompile(`^[a-z][a-z0-9_-]*$`)
 
 func (c *Config) applyDefaults() {
+	if c.LogLevel == "" {
+		c.LogLevel = "info"
+	}
 	if !c.Reconcile.PollInterval.set {
 		c.Reconcile.PollInterval.Duration = time.Minute
 	}
@@ -46,9 +50,18 @@ func (c *Config) applyDefaults() {
 	}
 }
 
+func (c *Config) normalize() {
+	c.LogLevel = strings.ToLower(strings.TrimSpace(c.LogLevel))
+	c.State.Type = strings.ToLower(strings.TrimSpace(c.State.Type))
+	c.State.Path = strings.TrimSpace(c.State.Path)
+}
+
 func (c *Config) validateAndCompile() error {
 	if c.Version != supportedVersion {
 		return fmt.Errorf("config version must be %d, found %d", supportedVersion, c.Version)
+	}
+	if err := c.validateLogLevel(); err != nil {
+		return err
 	}
 	if err := c.validateConnections(); err != nil {
 		return err
@@ -66,6 +79,22 @@ func (c *Config) validateAndCompile() error {
 		return err
 	}
 	return c.validateNaming()
+}
+
+func (c *Config) validateLogLevel() error {
+	switch c.LogLevel {
+	case "debug":
+		c.ParsedLevel = slog.LevelDebug
+	case "info":
+		c.ParsedLevel = slog.LevelInfo
+	case "warn":
+		c.ParsedLevel = slog.LevelWarn
+	case "error":
+		c.ParsedLevel = slog.LevelError
+	default:
+		return fmt.Errorf("log_level must be debug, info, warn, or error")
+	}
+	return nil
 }
 
 func (c *Config) validateConnections() error {

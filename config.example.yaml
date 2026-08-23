@@ -34,19 +34,6 @@ identity:
     students:
       - ${ENTRA_STUDENTS_GROUP_ID}
 
-reconcile:
-  poll_interval: 1m
-  device_details_ttl: 1h
-  identity_ttl: 15m
-  rename_retry_after: 30m
-  rename_max_attempts: 3
-  concurrency: 4
-
-# State defaults to memory. Use file state when cooldowns must survive restarts.
-# state:
-#   type: file
-#   path: /var/lib/onomazo/state.json
-
 naming:
   constraints:
     max_length: 15

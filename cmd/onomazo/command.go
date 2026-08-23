@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
-	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -96,16 +95,11 @@ func newPlanCommand(configPaths *[]string) *cobra.Command {
 
 func newRunCommand(configPaths *[]string) *cobra.Command {
 	var once bool
-	var logLevel string
 	command := &cobra.Command{
 		Use:   "run",
 		Short: "Reconcile names immediately, then continue at the configured interval",
 		Args:  cobra.NoArgs,
 		RunE: func(command *cobra.Command, _ []string) error {
-			level, err := parseLogLevel(logLevel)
-			if err != nil {
-				return err
-			}
 			cfg, err := config.Load((*configPaths)...)
 			if err != nil {
 				return fmt.Errorf("load configuration: %w", err)
@@ -114,7 +108,7 @@ func newRunCommand(configPaths *[]string) *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("start service: %w", err)
 			}
-			logger := slog.New(slog.NewJSONHandler(command.ErrOrStderr(), &slog.HandlerOptions{Level: level}))
+			logger := slog.New(slog.NewJSONHandler(command.ErrOrStderr(), &slog.HandlerOptions{Level: cfg.ParsedLevel}))
 			logger.Info("service started", "version", version, "config", *configPaths, "once", once)
 			if once {
 				return errors.Join(runCycle(command.Context(), service, logger, true), service.Close())
@@ -124,7 +118,6 @@ func newRunCommand(configPaths *[]string) *cobra.Command {
 		},
 	}
 	command.Flags().BoolVar(&once, "once", false, "run one reconciliation cycle and exit")
-	command.Flags().StringVar(&logLevel, "log-level", "info", "log level: debug, info, warn, or error")
 	return command
 }
 
@@ -162,20 +155,5 @@ func newVersionCommand() *cobra.Command {
 			_, err := fmt.Fprintf(command.OutOrStdout(), "onomazo %s\ncommit: %s\nbuilt: %s\n", version, commit, date)
 			return err
 		},
-	}
-}
-
-func parseLogLevel(value string) (slog.Level, error) {
-	switch strings.ToLower(value) {
-	case "debug":
-		return slog.LevelDebug, nil
-	case "info":
-		return slog.LevelInfo, nil
-	case "warn":
-		return slog.LevelWarn, nil
-	case "error":
-		return slog.LevelError, nil
-	default:
-		return 0, fmt.Errorf("log level must be debug, info, warn, or error")
 	}
 }

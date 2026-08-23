@@ -1,6 +1,7 @@
 package config
 
 import (
+	"log/slog"
 	"time"
 
 	"github.com/woodleighschool/onomazo/internal/expression"
@@ -9,13 +10,15 @@ import (
 // Config is the complete versioned configuration.
 type Config struct {
 	Version     int                   `yaml:"version"     jsonschema:"enum=1"`
+	LogLevel    string                `yaml:"log_level,omitempty" env:"LOG_LEVEL" jsonschema:"enum=debug,enum=info,enum=warn,enum=error"`
 	Connections map[string]Connection `yaml:"connections" jsonschema:"minProperties=1"`
 	Devices     []DeviceSource        `yaml:"devices"     jsonschema:"minItems=1"`
 	Identity    *Identity             `yaml:"identity,omitempty"`
-	Reconcile   Reconcile             `yaml:"reconcile,omitempty"`
-	State       State                 `yaml:"state,omitempty"`
+	Reconcile   Reconcile             `yaml:"reconcile,omitempty" envPrefix:"RECONCILE_"`
+	State       State                 `yaml:"state,omitempty"     envPrefix:"STATE_"`
 	Naming      Naming                `yaml:"naming"`
 	Programs    Programs              `yaml:"-"`
+	ParsedLevel slog.Level            `yaml:"-" jsonschema:"-"`
 }
 
 // Connection contains credentials for a remote API.
@@ -46,18 +49,18 @@ type Identity struct {
 
 // Reconcile controls polling, cache lifetimes, and rename retry behavior.
 type Reconcile struct {
-	PollInterval      Duration `yaml:"poll_interval,omitempty"`
-	DeviceDetailsTTL  Duration `yaml:"device_details_ttl,omitempty"`
-	IdentityTTL       Duration `yaml:"identity_ttl,omitempty"`
-	RenameRetryAfter  Duration `yaml:"rename_retry_after,omitempty"`
-	RenameMaxAttempts int      `yaml:"rename_max_attempts,omitempty" jsonschema:"minimum=1"`
-	Concurrency       int      `yaml:"concurrency,omitempty"         jsonschema:"minimum=1"`
+	PollInterval      Duration `yaml:"poll_interval,omitempty"       env:"POLL_INTERVAL"`
+	DeviceDetailsTTL  Duration `yaml:"device_details_ttl,omitempty"  env:"DEVICE_DETAILS_TTL"`
+	IdentityTTL       Duration `yaml:"identity_ttl,omitempty"        env:"IDENTITY_TTL"`
+	RenameRetryAfter  Duration `yaml:"rename_retry_after,omitempty"  env:"RENAME_RETRY_AFTER"`
+	RenameMaxAttempts int      `yaml:"rename_max_attempts,omitempty" env:"RENAME_MAX_ATTEMPTS" jsonschema:"minimum=1"`
+	Concurrency       int      `yaml:"concurrency,omitempty"         env:"CONCURRENCY"         jsonschema:"minimum=1"`
 }
 
 // State selects the rename-intent store. Memory state remains fully functional but does not survive restarts.
 type State struct {
-	Type string `yaml:"type,omitempty" jsonschema:"enum=memory,enum=file"`
-	Path string `yaml:"path,omitempty"`
+	Type string `yaml:"type,omitempty" env:"TYPE" jsonschema:"enum=memory,enum=file"`
+	Path string `yaml:"path,omitempty" env:"PATH"`
 }
 
 // Naming contains the ordered policy evaluated for every discovered device.
@@ -141,7 +144,7 @@ type RulePrograms struct {
 	DesiredName expression.Program
 }
 
-// Duration is a YAML duration parsed with time.ParseDuration.
+// Duration is a configuration duration parsed with time.ParseDuration.
 type Duration struct {
 	time.Duration
 

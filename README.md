@@ -28,9 +28,9 @@ The published container runs the continuous service by default:
 
 ```bash
 docker run --rm \
+  --env-file .env \
   --volume "$PWD/config.yaml:/config.yaml:ro" \
-  ghcr.io/woodleighschool/onomazo:rolling \
-  run --config /config.yaml
+  ghcr.io/woodleighschool/onomazo:rolling
 ```
 
 Daemon mode writes structured JSON to stderr. Lifecycle and material reconciliation events use `info`, warnings and failures use `warn` or `error`, and successful cycle summaries plus routine no-op evaluations use `debug`.
@@ -38,6 +38,20 @@ Daemon mode writes structured JSON to stderr. Lifecycle and material reconciliat
 ## ⚙️ Configuration
 
 Configuration is strict: unknown fields fail, lists replace earlier lists, and mappings merge recursively. Environment placeholders must occupy the whole value, such as `${JAMF_CLIENT_SECRET}`.
+
+Runtime settings resolve from `ONOMAZO_*` environment variables, then the corresponding YAML value, then the default. CLI flags select configuration files or command behaviour rather than mirroring runtime settings.
+
+| Environment variable                    | YAML fallback                   | Default  |
+| --------------------------------------- | ------------------------------- | -------- |
+| `ONOMAZO_LOG_LEVEL`                     | `log_level`                     | `info`   |
+| `ONOMAZO_RECONCILE_POLL_INTERVAL`       | `reconcile.poll_interval`       | `1m`     |
+| `ONOMAZO_RECONCILE_DEVICE_DETAILS_TTL`  | `reconcile.device_details_ttl`  | `1h`     |
+| `ONOMAZO_RECONCILE_IDENTITY_TTL`        | `reconcile.identity_ttl`        | `15m`    |
+| `ONOMAZO_RECONCILE_RENAME_RETRY_AFTER`  | `reconcile.rename_retry_after`  | `30m`    |
+| `ONOMAZO_RECONCILE_RENAME_MAX_ATTEMPTS` | `reconcile.rename_max_attempts` | `3`      |
+| `ONOMAZO_RECONCILE_CONCURRENCY`         | `reconcile.concurrency`         | `4`      |
+| `ONOMAZO_STATE_TYPE`                    | `state.type`                    | `memory` |
+| `ONOMAZO_STATE_PATH`                    | `state.path`                    | empty    |
 
 | Section              | Purpose                                        |
 | -------------------- | ---------------------------------------------- |
@@ -56,10 +70,9 @@ Naming expressions receive typed `device`, `user`, and `vars` values plus `slug(
 
 File state survives restarts and is written atomically:
 
-```yaml
-state:
-  type: file
-  path: /var/lib/onomazo/state.json
+```bash
+ONOMAZO_STATE_TYPE=file
+ONOMAZO_STATE_PATH=/var/lib/onomazo/state.json
 ```
 
 ## 🔄 Reconciliation

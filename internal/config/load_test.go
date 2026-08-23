@@ -62,12 +62,9 @@ identity:
       exclude: true
 `)
 
-	config, err := load([]string{basePath, groupsPath, overridesPath}, func(name string) (string, bool) {
-		value, ok := map[string]string{
-			"TENANT_ID":     "tenant",
-			"CLIENT_SECRET": "secret",
-		}[name]
-		return value, ok
+	config, err := load([]string{basePath, groupsPath, overridesPath}, map[string]string{
+		"TENANT_ID":     "tenant",
+		"CLIENT_SECRET": "secret",
 	})
 	if err != nil {
 		t.Fatalf("load() error = %v", err)
@@ -87,6 +84,41 @@ identity:
 	}
 	if got, want := config.Naming.Overrides[0].Name, "excluded-site-device"; got != want {
 		t.Errorf("override name = %q, want %q", got, want)
+	}
+}
+
+func TestLoadResolvesEnvironmentOverYAMLOverDefaults(t *testing.T) {
+	t.Parallel()
+
+	local := strings.Replace(
+		validConfig,
+		"version: 1",
+		"version: 1\nlog_level: warn\nreconcile:\n  poll_interval: 30s",
+		1,
+	)
+	cfg, err := loadConfig(t, local, standardEnvironment())
+	if err != nil {
+		t.Fatalf("load() local config error = %v", err)
+	}
+	if got, want := cfg.LogLevel, "warn"; got != want {
+		t.Errorf("local log level = %q, want %q", got, want)
+	}
+	if got, want := cfg.Reconcile.PollInterval.Duration, 30*time.Second; got != want {
+		t.Errorf("local poll interval = %v, want %v", got, want)
+	}
+
+	environment := standardEnvironment()
+	environment["ONOMAZO_LOG_LEVEL"] = " DEBUG "
+	environment["ONOMAZO_RECONCILE_POLL_INTERVAL"] = "45s"
+	cfg, err = loadConfig(t, local, environment)
+	if err != nil {
+		t.Fatalf("load() environment override error = %v", err)
+	}
+	if got, want := cfg.LogLevel, "debug"; got != want {
+		t.Errorf("environment log level = %q, want %q", got, want)
+	}
+	if got, want := cfg.Reconcile.PollInterval.Duration, 45*time.Second; got != want {
+		t.Errorf("environment poll interval = %v, want %v", got, want)
 	}
 }
 
@@ -194,10 +226,7 @@ func loadConfig(t *testing.T, contents string, environment map[string]string) (*
 	t.Helper()
 
 	path := writeConfigFile(t, t.TempDir(), "config.yaml", contents)
-	return load([]string{path}, func(name string) (string, bool) {
-		value, ok := environment[name]
-		return value, ok
-	})
+	return load([]string{path}, environment)
 }
 
 func writeConfigFile(t *testing.T, directory, name, contents string) string {
