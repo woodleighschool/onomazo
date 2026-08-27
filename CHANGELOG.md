@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.1.6](https://github.com/woodleighschool/onomazo/compare/0.1.5...0.1.6) (2026-08-27)
+
+
+### Documentation
+
+* clarify usage and releases ([3506649](https://github.com/woodleighschool/onomazo/commit/3506649d9153503ad733d1948d53ac22425aa88a))
+
+
+### Continuous Integration
+
+* **github-action:** update action docker/github-builder (v1.16.0 → v1.17.0) ([#48](https://github.com/woodleighschool/onomazo/issues/48)) ([d321e52](https://github.com/woodleighschool/onomazo/commit/d321e52c1ad03798180854cb73bde837b53805d5))
+
+
+### Miscellaneous Chores
+
+* **mise:** update tool oxfmt (0.64.0 → 0.65.0) ([#50](https://github.com/woodleighschool/onomazo/issues/50)) ([925d62b](https://github.com/woodleighschool/onomazo/commit/925d62ba0498e72275774c8172876aae42b937af))
+
 ## [0.1.5](https://github.com/woodleighschool/onomazo/compare/0.1.4...0.1.5) (2026-08-23)
 
 
