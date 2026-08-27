@@ -1,5 +1,11 @@
 # onomazo
 
+[![Release](https://img.shields.io/github/v/release/woodleighschool/onomazo?display_name=tag&sort=semver)](https://github.com/woodleighschool/onomazo/releases/latest)
+[![CI](https://github.com/woodleighschool/onomazo/actions/workflows/ci.yaml/badge.svg?branch=main)](https://github.com/woodleighschool/onomazo/actions/workflows/ci.yaml)
+[![Go](https://img.shields.io/github/go-mod/go-version/woodleighschool/onomazo?logo=go)](https://github.com/woodleighschool/onomazo/blob/main/go.mod)
+[![Container](https://img.shields.io/badge/container-ghcr.io-2496ED?logo=github&logoColor=white)](https://github.com/orgs/woodleighschool/packages/container/package/onomazo)
+[![License](https://img.shields.io/github/license/woodleighschool/onomazo)](https://github.com/woodleighschool/onomazo/blob/main/LICENSE)
+
 > **ὀνομάζω** (_onomázō_) — “to name”
 
 Reconciles device names across Microsoft Intune and Jamf Pro from one YAML policy. It can run once from the command line or continuously as a service.
@@ -12,19 +18,49 @@ Planning uses a complete inventory snapshot and resolves collisions deterministi
 
 ## 🚀 Usage
 
-Download an archive from the [latest release](https://github.com/woodleighschool/onomazo/releases/latest), or build it with Mise. Start from [`config.example.yaml`](config.example.yaml). If `config.yaml` is present in the current directory, `--config` may be omitted:
+Download CLI archives for macOS, Linux, or Windows from the [latest release](https://github.com/woodleighschool/onomazo/releases/latest), or use the container `ghcr.io/woodleighschool/onomazo:rolling`.
+
+Start with the example policy and an environment file for its `${...}` values:
 
 ```bash
-onomazo validate
-onomazo plan
-onomazo plan --output json
+cp config.example.yaml config.yaml
+touch .env
+```
+
+Fill `.env` with values for the `${...}` names in `config.yaml`. The container commands below read this file; export the same values in your shell when using a downloaded binary.
+
+| Command              | Behaviour                                    |
+| -------------------- | -------------------------------------------- |
+| `onomazo validate`   | Validate configuration and exit              |
+| `onomazo plan`       | Print a read-only naming plan                |
+| `onomazo run --once` | Apply one reconciliation cycle and exit      |
+| `onomazo run`        | Apply immediately, then continue on interval |
+
+If `config.yaml` is in the current directory, `--config` may be omitted. Multiple `--config` flags apply overlays in order.
+
+### Run once
+
+```bash
 onomazo run --once
+```
+
+With the container:
+
+```bash
+docker run --rm \
+  --env-file .env \
+  --volume "$PWD/config.yaml:/config.yaml:ro" \
+  ghcr.io/woodleighschool/onomazo:rolling \
+  run --once
+```
+
+### Run continuously
+
+```bash
 onomazo run
 ```
 
-Multiple `--config` flags apply overlays in order. `plan` is always read-only.
-
-The published container runs the continuous service by default:
+The container runs continuously by default:
 
 ```bash
 docker run --rm \
