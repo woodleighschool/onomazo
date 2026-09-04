@@ -6,7 +6,7 @@ require (
 	cel.dev/cel-go v0.32.0
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.14.1
 	github.com/caarlos0/env/v11 v11.4.1
-	github.com/gofrs/flock v0.13.0
+	github.com/gofrs/flock v0.13.1
 	github.com/invopop/jsonschema v0.14.0
 	github.com/microsoft/kiota-abstractions-go v1.10.0
 	github.com/microsoftgraph/msgraph-sdk-go v1.101.0
