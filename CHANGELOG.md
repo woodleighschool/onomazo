@@ -1,5 +1,30 @@
 # Changelog
 
+## [0.1.7](https://github.com/woodleighschool/onomazo/compare/0.1.6...0.1.7) (2026-09-04)
+
+
+### Features
+
+* **go:** update module github.com/microsoft/kiota-abstractions-go (v1.9.4 → v1.10.0) ([#55](https://github.com/woodleighschool/onomazo/issues/55)) ([4a20a0f](https://github.com/woodleighschool/onomazo/commit/4a20a0f31dcedbbd90c24416eb7e9e2b2ff3410a))
+
+
+### Bug Fixes
+
+* **go:** update module github.com/azure/azure-sdk-for-go/sdk/azidentity (v1.14.0 → v1.14.1) ([#53](https://github.com/woodleighschool/onomazo/issues/53)) ([c40cd21](https://github.com/woodleighschool/onomazo/commit/c40cd213cef6772be2a5052887a7dde2ad494919))
+
+
+### Continuous Integration
+
+* **github-action:** update action jdx/mise-action (v4.2.5 → v4.3.0) ([#51](https://github.com/woodleighschool/onomazo/issues/51)) ([d7f96f7](https://github.com/woodleighschool/onomazo/commit/d7f96f7f52c8d6b55d9954905d654ef3ea0ff46c))
+
+
+### Miscellaneous Chores
+
+* fresh mise lock ([10b4fb3](https://github.com/woodleighschool/onomazo/commit/10b4fb387d6bece255c695809b46cd47ad1cbe6e))
+* **mise:** update tool lefthook (2.1.11 → 2.1.12) ([#57](https://github.com/woodleighschool/onomazo/issues/57)) ([0939532](https://github.com/woodleighschool/onomazo/commit/093953207908f99c089d21e435faf2c858552586))
+* **mise:** update tool oxfmt (0.65.0 → 0.66.0) ([#62](https://github.com/woodleighschool/onomazo/issues/62)) ([2c7675f](https://github.com/woodleighschool/onomazo/commit/2c7675f0b8c59fb9128dd9614d6d1f6eaee3d276))
+* **mise:** update tool zizmor (1.29.0 → 1.30.0) ([#61](https://github.com/woodleighschool/onomazo/issues/61)) ([734b63b](https://github.com/woodleighschool/onomazo/commit/734b63bd0ea699cfd09f7c4a7ac87e517e0862d0))
+
 ## [0.1.6](https://github.com/woodleighschool/onomazo/compare/0.1.5...0.1.6) (2026-08-27)
 
 
