@@ -1,5 +1,37 @@
 # Changelog
 
+## [0.1.7](https://github.com/woodleighschool/onomazo/compare/0.1.6...0.1.7) (2026-09-12)
+
+
+### Features
+
+* **go:** update module github.com/microsoft/kiota-abstractions-go (v1.9.4 → v1.10.0) ([#55](https://github.com/woodleighschool/onomazo/issues/55)) ([4a20a0f](https://github.com/woodleighschool/onomazo/commit/4a20a0f31dcedbbd90c24416eb7e9e2b2ff3410a))
+* **plan:** show noteworthy devices by default ([3fe9705](https://github.com/woodleighschool/onomazo/commit/3fe97056659992c93da9acb7a2ece8a308c1bfbc))
+
+
+### Bug Fixes
+
+* **container:** update image golang (1.27.0 → 1.27.1) ([#59](https://github.com/woodleighschool/onomazo/issues/59)) ([508695c](https://github.com/woodleighschool/onomazo/commit/508695c1fd4a000e487fcd13f858da3eb411c82e))
+* **go:** update module github.com/azure/azure-sdk-for-go/sdk/azidentity (v1.14.0 → v1.14.1) ([#53](https://github.com/woodleighschool/onomazo/issues/53)) ([c40cd21](https://github.com/woodleighschool/onomazo/commit/c40cd213cef6772be2a5052887a7dde2ad494919))
+* **go:** update module github.com/gofrs/flock (v0.13.0 → v0.13.1) ([#54](https://github.com/woodleighschool/onomazo/issues/54)) ([335b7ec](https://github.com/woodleighschool/onomazo/commit/335b7ec212a1e2ee44bb2a45f051f6b1fc1f176b))
+* **go:** update module github.com/microsoft/kiota-abstractions-go (v1.10.0 → v1.10.1) ([#58](https://github.com/woodleighschool/onomazo/issues/58)) ([b6a1d94](https://github.com/woodleighschool/onomazo/commit/b6a1d9421e232a392fb1bf8c301fb0510de935d4))
+
+
+### Continuous Integration
+
+* **github-action:** update action jdx/mise-action (v4.2.5 → v4.3.0) ([#51](https://github.com/woodleighschool/onomazo/issues/51)) ([d7f96f7](https://github.com/woodleighschool/onomazo/commit/d7f96f7f52c8d6b55d9954905d654ef3ea0ff46c))
+* validate release archives and skip metadata checks ([0dddb88](https://github.com/woodleighschool/onomazo/commit/0dddb8821121dca1bf65f8bf4c4bc5eb6c93f74f))
+
+
+### Miscellaneous Chores
+
+* fresh mise lock ([10b4fb3](https://github.com/woodleighschool/onomazo/commit/10b4fb387d6bece255c695809b46cd47ad1cbe6e))
+* **mise:** update go toolchain ([#56](https://github.com/woodleighschool/onomazo/issues/56)) ([6c4b5cf](https://github.com/woodleighschool/onomazo/commit/6c4b5cf4f18cd62b1811632c0df6a659fa11b169))
+* **mise:** update tool lefthook (2.1.11 → 2.1.12) ([#57](https://github.com/woodleighschool/onomazo/issues/57)) ([0939532](https://github.com/woodleighschool/onomazo/commit/093953207908f99c089d21e435faf2c858552586))
+* **mise:** update tool oxfmt (0.65.0 → 0.66.0) ([#62](https://github.com/woodleighschool/onomazo/issues/62)) ([2c7675f](https://github.com/woodleighschool/onomazo/commit/2c7675f0b8c59fb9128dd9614d6d1f6eaee3d276))
+* **mise:** update tool zizmor (1.29.0 → 1.30.0) ([#61](https://github.com/woodleighschool/onomazo/issues/61)) ([734b63b](https://github.com/woodleighschool/onomazo/commit/734b63bd0ea699cfd09f7c4a7ac87e517e0862d0))
+* remove redundant workflow lint task ([ea54e2d](https://github.com/woodleighschool/onomazo/commit/ea54e2dc45daf01b7ab6aacd765ad3ba4f9f2946))
+
 ## [0.1.6](https://github.com/woodleighschool/onomazo/compare/0.1.5...0.1.6) (2026-08-27)
 
 
