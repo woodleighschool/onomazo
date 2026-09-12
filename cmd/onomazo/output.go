@@ -26,7 +26,7 @@ type planOutput struct {
 	Action    app.Action     `json:"action"`
 }
 
-func writePlan(writer io.Writer, output string, results []app.Result) error {
+func writePlan(writer io.Writer, output string, includeUnchanged bool, results []app.Result) error {
 	if output == "json" {
 		encoder := json.NewEncoder(writer)
 		encoder.SetEscapeHTML(false)
@@ -45,6 +45,9 @@ func writePlan(writer io.Writer, output string, results []app.Result) error {
 		return fmt.Errorf("write plan header: %w", err)
 	}
 	for _, result := range results {
+		if !includeUnchanged && result.Status == planner.StatusUnchanged {
+			continue
+		}
 		if _, err := fmt.Fprintf(
 			table,
 			"%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
@@ -64,7 +67,22 @@ func writePlan(writer io.Writer, output string, results []app.Result) error {
 	if err := table.Flush(); err != nil {
 		return fmt.Errorf("flush plan: %w", err)
 	}
-	return nil
+	counts := make(map[planner.Status]int)
+	for _, result := range results {
+		counts[result.Status]++
+	}
+	_, err := fmt.Fprintf(
+		writer,
+		"\nDevice summary: %d total, %d rename, %d unchanged, %d excluded, %d unmanaged, %d invalid, %d unresolved\n",
+		len(results),
+		counts[planner.StatusRename],
+		counts[planner.StatusUnchanged],
+		counts[planner.StatusExcluded],
+		counts[planner.StatusUnmanaged],
+		counts[planner.StatusInvalid],
+		counts[planner.StatusUnresolved],
+	)
+	return err
 }
 
 func newPlanOutput(result app.Result) planOutput {

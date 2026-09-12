@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"io"
 	"strings"
 	"testing"
 
@@ -27,7 +28,7 @@ func TestWriteJSONPlanKeepsBaselineComparisonFields(t *testing.T) {
 		Action:       app.ActionPlanned,
 	}
 	var output bytes.Buffer
-	if err := writePlan(&output, "json", []app.Result{result}); err != nil {
+	if err := writePlan(&output, "json", false, []app.Result{result}); err != nil {
 		t.Fatalf("writePlan() error = %v", err)
 	}
 	var record map[string]any
@@ -80,11 +81,11 @@ func TestWriteHumanPlanUsesAlignedColumns(t *testing.T) {
 			Reason:       "no naming rule matched"},
 	}
 	var output bytes.Buffer
-	if err := writePlan(&output, "human", results); err != nil {
+	if err := writePlan(&output, "human", false, results); err != nil {
 		t.Fatalf("writePlan() error = %v", err)
 	}
 	lines := strings.Split(strings.TrimSuffix(output.String(), "\n"), "\n")
-	if got, want := len(lines), 3; got != want {
+	if got, want := len(lines), 5; got != want {
 		t.Fatalf("output lines = %d, want %d: %q", got, want, output.String())
 	}
 	columns := []struct {
@@ -129,7 +130,7 @@ func TestWriteJSONPlanKeepsEmptyComparisonFields(t *testing.T) {
 		CurrentName:  "FIXTURE",
 		Status:       planner.StatusUnmanaged}
 	var jsonOutput bytes.Buffer
-	if err := writePlan(&jsonOutput, "json", []app.Result{result}); err != nil {
+	if err := writePlan(&jsonOutput, "json", false, []app.Result{result}); err != nil {
 		t.Fatalf("writePlan(json) error = %v", err)
 	}
 	var record map[string]any
@@ -140,5 +141,61 @@ func TestWriteJSONPlanKeepsEmptyComparisonFields(t *testing.T) {
 		if value, exists := record[field]; !exists || value != "" {
 			t.Errorf("%s = %#v, exists %t, want empty field", field, value, exists)
 		}
+	}
+}
+
+func TestWriteHumanPlanIncludesUnchangedOnlyWithAll(t *testing.T) {
+	t.Parallel()
+	for _, all := range []bool{false, true} {
+		var output bytes.Buffer
+		results := outputFixture()
+		if err := writePlan(&output, "human", all, results); err != nil {
+			t.Fatal(err)
+		}
+		text := output.String()
+		for _, result := range results {
+			want := all || result.Status != planner.StatusUnchanged
+			if got := strings.Contains(text, result.SerialNumber); got != want {
+				t.Errorf("all %t: plan contains %s = %t, want %t:\n%s", all, result.Status, got, want, text)
+			}
+		}
+		if !strings.Contains(text, "Device summary: 6 total, 1 rename, 1 unchanged, 1 excluded, 1 unmanaged, 1 invalid, 1 unresolved") {
+			t.Errorf("all %t: plan missing complete summary:\n%s", all, text)
+		}
+	}
+}
+
+func TestWriteJSONPlanAlwaysIncludesEveryDevice(t *testing.T) {
+	t.Parallel()
+	for _, all := range []bool{false, true} {
+		var output bytes.Buffer
+		results := outputFixture()
+		if err := writePlan(&output, "json", all, results); err != nil {
+			t.Fatal(err)
+		}
+		decoder := json.NewDecoder(&output)
+		for _, result := range results {
+			var record planOutput
+			if err := decoder.Decode(&record); err != nil {
+				t.Fatal(err)
+			}
+			if record.Serial != result.SerialNumber || record.Status != result.Status {
+				t.Errorf("all %t: record = %#v, want device %s with status %s", all, record, result.SerialNumber, result.Status)
+			}
+		}
+		if err := decoder.Decode(new(planOutput)); err != io.EOF {
+			t.Errorf("all %t: trailing output error = %v, want EOF", all, err)
+		}
+	}
+}
+
+func outputFixture() []app.Result {
+	return []app.Result{
+		{SerialNumber: "SERIAL-1", Status: planner.StatusRename, CurrentName: "OLD", DesiredName: "NEW", Reason: "name differs", Action: app.ActionPlanned},
+		{SerialNumber: "SERIAL-2", Status: planner.StatusUnchanged, CurrentName: "CURRENT", DesiredName: "CURRENT", Reason: "name already matches"},
+		{SerialNumber: "SERIAL-3", Status: planner.StatusExcluded, Reason: "matched override"},
+		{SerialNumber: "SERIAL-4", Status: planner.StatusUnmanaged, Reason: "no naming rule matched"},
+		{SerialNumber: "SERIAL-5", Status: planner.StatusInvalid, Reason: "desired name exceeds length limit"},
+		{SerialNumber: "SERIAL-6", Status: planner.StatusUnresolved, Reason: "variable resolved to conflicting values"},
 	}
 }

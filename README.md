@@ -33,10 +33,13 @@ Fill `.env` with values for the `${...}` names in `config.yaml`. The container c
 | -------------------- | -------------------------------------------- |
 | `onomazo validate`   | Validate configuration and exit              |
 | `onomazo plan`       | Print a read-only naming plan                |
+| `onomazo plan --all` | Include unchanged devices in the plan        |
 | `onomazo run --once` | Apply one reconciliation cycle and exit      |
 | `onomazo run`        | Apply immediately, then continue on interval |
 
 If `config.yaml` is in the current directory, `--config` may be omitted. Multiple `--config` flags apply overlays in order.
+
+Human plans omit unchanged devices by default and include summary counts for the complete inventory. Excluded, unmanaged, invalid, and unresolved devices remain visible. Use `plan --all` to include unchanged devices; `plan --output json` always includes every device as a separate JSON record.
 
 ### Run once
 
