@@ -22,31 +22,7 @@ func TestDefaultConfigPathsUsesConfigInCurrentDirectory(t *testing.T) {
 
 func TestValidateAcceptsOrderedConfigurationFiles(t *testing.T) {
 	directory := t.TempDir()
-	basePath := writeCommandConfig(t, directory, "base.yaml", `version: 1
-connections:
-  microsoft:
-    type: microsoft_graph
-    tenant_id: tenant
-    client_id: client
-    client_secret: secret
-devices:
-  - name: intune
-    type: intune
-    connection: microsoft
-    platforms: [macos]
-identity:
-  name: entra
-  type: entra
-  connection: microsoft
-naming:
-  constraints:
-    max_length: 15
-    pattern: '^[A-Z0-9][A-Z0-9-]*$'
-  rules:
-    - name: assigned-user
-      when: user.present
-      desired_name: slug(user.mail_nickname).upperAscii()
-`)
+	basePath := writeCommandConfig(t, directory, "base.yaml", commandConfig)
 	groupsPath := writeCommandConfig(t, directory, "groups.yaml", `identity:
   groups:
     staff: [staff-group]
@@ -58,7 +34,7 @@ naming:
       exclude: true
 `)
 
-	command := newRootCommand()
+	command, _ := newRootCommand()
 	command.SetArgs([]string{
 		"validate",
 		"--config", basePath,
@@ -85,3 +61,29 @@ func writeCommandConfig(t *testing.T, directory, name, contents string) string {
 	}
 	return path
 }
+
+const commandConfig = `version: 1
+connections:
+  microsoft:
+    type: microsoft_graph
+    tenant_id: tenant
+    client_id: client
+    client_secret: secret
+devices:
+  - name: intune
+    type: intune
+    connection: microsoft
+    platforms: [macos]
+identity:
+  name: entra
+  type: entra
+  connection: microsoft
+naming:
+  constraints:
+    max_length: 15
+    pattern: '^[A-Z0-9][A-Z0-9-]*$'
+  rules:
+    - name: assigned-user
+      when: user.present
+      desired_name: slug(user.mail_nickname).upperAscii()
+`

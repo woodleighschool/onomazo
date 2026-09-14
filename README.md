@@ -34,17 +34,17 @@ Fill `.env` with values for the `${...}` names in `config.yaml`. The container c
 | `onomazo validate`   | Validate configuration and exit              |
 | `onomazo plan`       | Print a read-only naming plan                |
 | `onomazo plan --all` | Include unchanged devices in the plan        |
-| `onomazo run --once` | Apply one reconciliation cycle and exit      |
+| `onomazo apply`      | Apply one reconciliation cycle and exit      |
 | `onomazo run`        | Apply immediately, then continue on interval |
 
 If `config.yaml` is in the current directory, `--config` may be omitted. Multiple `--config` flags apply overlays in order.
 
-Human plans omit unchanged devices by default and include summary counts for the complete inventory. Excluded, unmanaged, invalid, and unresolved devices remain visible. Use `plan --all` to include unchanged devices; `plan --output json` always includes every device as a separate JSON record.
+Human plans omit unchanged devices by default and include summary counts for the complete inventory. Excluded, unmanaged, invalid, and unresolved devices remain visible. Use `plan --all` to include unchanged devices; `--output text` (default) writes a readable report. `--output json` writes one report object containing every device with its planned name and actual action outcome.
 
 ### Run once
 
 ```bash
-onomazo run --once
+onomazo apply
 ```
 
 With the container:
@@ -54,7 +54,7 @@ docker run --rm \
   --env-file .env \
   --volume "$PWD/config.yaml:/config.yaml:ro" \
   ghcr.io/woodleighschool/onomazo:rolling \
-  run --once
+  apply
 ```
 
 ### Run continuously
@@ -72,13 +72,26 @@ docker run --rm \
   ghcr.io/woodleighschool/onomazo:rolling
 ```
 
-Daemon mode writes structured JSON to stderr. Lifecycle and material reconciliation events use `info`, warnings and failures use `warn` or `error`, and successful cycle summaries plus routine no-op evaluations use `debug`.
+Stages and diagnostics go to stderr; reports go to stdout. Finite commands show
+indented operation rows beneath a reconciliation heading, with measured counts where available and a spinner for
+waiting work. Completed results remain in scrollback. Colours respect `NO_COLOR`.
+Successful operation trees collapse to their heading; failures remain expanded.
+Redirected output and CI use log lines, with intermediate progress at debug level. `--no-progress` disables animation. `--quiet` (`-q`) keeps warnings and errors;
+`--verbose` (`-v`) and `--debug` (`-d`) enable debug diagnostics. Use `--log-level
+debug|info|warn|error` for an explicit threshold. Log levels leave reports intact.
+`--output text` (default) writes a readable report. `--output json` writes one report object, including partial results and an `error`
+when execution fails. `--log-format json` writes JSON diagnostic records.
+
+`run` defaults to JSON diagnostics with no animation. Startup, shutdown and
+material changes use `info`; routine stages and unchanged cycles use `debug`.
+`--log-format text` selects readable service logs. Cycles continue after failures;
+`apply` exits unsuccessfully when its cycle fails.
 
 ## ⚙️ Configuration
 
 Configuration is strict: unknown fields fail, lists replace earlier lists, and mappings merge recursively. Environment placeholders must occupy the whole value, such as `${JAMF_CLIENT_SECRET}`.
 
-Runtime settings resolve from `ONOMAZO_*` environment variables, then the corresponding YAML value, then the default. CLI flags select configuration files or command behaviour rather than mirroring runtime settings.
+Runtime settings resolve from `ONOMAZO_*` environment variables, then the corresponding YAML value, then the default. Explicit CLI logging flags override the configured log level.
 
 | Environment variable                    | YAML fallback                   | Default  |
 | --------------------------------------- | ------------------------------- | -------- |

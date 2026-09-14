@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"sort"
 	"sync"
@@ -35,6 +36,7 @@ type cachedUser struct {
 
 // Service reconciles complete provider snapshots through one deterministic global plan.
 type Service struct {
+	logger            *slog.Logger
 	sources           []DeviceSource
 	sourcesByName     map[string]DeviceSource
 	identity          IdentityResolver
@@ -75,6 +77,9 @@ func New(options Options) (*Service, error) {
 	if options.RenameMaxAttempts <= 0 || options.Concurrency <= 0 {
 		return nil, fmt.Errorf("rename attempts and concurrency must be greater than zero")
 	}
+	if options.Logger == nil {
+		options.Logger = slog.New(slog.DiscardHandler)
+	}
 	if options.Now == nil {
 		options.Now = time.Now
 	}
@@ -89,6 +94,7 @@ func New(options Options) (*Service, error) {
 		sourcesByName[source.Name()] = source
 	}
 	return &Service{
+		logger:            options.Logger,
 		sources:           append([]DeviceSource(nil), options.Sources...),
 		sourcesByName:     sourcesByName,
 		identity:          options.Identity,
@@ -107,14 +113,19 @@ func New(options Options) (*Service, error) {
 }
 
 // Reconcile fetches a complete snapshot, produces one plan, and optionally submits allowed renames.
-func (s *Service) Reconcile(ctx context.Context, apply bool) ([]Result, error) {
+func (s *Service) Reconcile(ctx context.Context, apply bool) (result []Result, runErr error) {
 	now := s.now().UTC()
+	done := s.stage(ctx, "Fetching device inventories")
+	defer func() { done(runErr) }()
 	fresh, err := s.listDevices(ctx)
+	done(err)
 	if err != nil {
 		return nil, err
 	}
 	devices := s.refreshDevices(fresh, now)
+	done = s.stage(ctx, "Resolving identities")
 	users, err := s.resolveUsers(ctx, devices, now)
+	done(err)
 	if err != nil {
 		return nil, err
 	}
@@ -124,20 +135,23 @@ func (s *Service) Reconcile(ctx context.Context, apply bool) ([]Result, error) {
 		records[index] = planner.Record{Device: device, User: users[device.UserID]}
 		devicesByKey[deviceKey(device)] = device
 	}
+	done = s.stage(ctx, "Planning device names")
 	items, err := s.planner.Plan(records)
+	done(err)
 	if err != nil {
 		return nil, fmt.Errorf("plan device names: %w", err)
 	}
 	results := make([]Result, len(items))
 	for index, item := range items {
 		results[index].Item = item
-		if !apply && item.Status == planner.StatusRename {
+		if item.Status == planner.StatusRename {
 			results[index].Action = ActionPlanned
 		}
 	}
 	if !apply {
 		return results, nil
 	}
+	done = s.stage(ctx, "Applying device names")
 	return s.apply(ctx, results, devicesByKey, now)
 }
 
@@ -150,12 +164,13 @@ func (s *Service) listDevices(ctx context.Context) ([]domain.Device, error) {
 	resultChannel := make(chan sourceResult, len(s.sources))
 	for _, source := range s.sources {
 		go func() {
+			s.logger.DebugContext(ctx, "Fetching devices", "source", source.Name())
 			devices, err := source.ListDevices(ctx)
 			resultChannel <- sourceResult{name: source.Name(), devices: devices, err: err}
 		}()
 	}
 	bySource := make(map[string][]domain.Device, len(s.sources))
-	for range s.sources {
+	for completed := range len(s.sources) {
 		result := <-resultChannel
 		if result.err != nil {
 			return nil, fmt.Errorf("list %s devices: %w", result.name, result.err)
@@ -171,6 +186,7 @@ func (s *Service) listDevices(ctx context.Context) ([]domain.Device, error) {
 			device.Source = result.name
 		}
 		bySource[result.name] = result.devices
+		s.logger.InfoContext(ctx, "Fetching device inventories", "progress", true, "current", completed+1, "total", len(s.sources), "unit", "sources", "progress_final", completed+1 == len(s.sources))
 	}
 	var devices []domain.Device
 	for _, source := range s.sources {
@@ -265,7 +281,8 @@ func (s *Service) apply(
 		stateSerial := stateSerialNumber(result.ID, result.SerialNumber)
 		if result.Status != planner.StatusRename {
 			if _, err := s.ledger.Observe(key, stateSerial, result.CurrentName); err != nil {
-				return nil, fmt.Errorf(
+				result.Error = err.Error()
+				return results, fmt.Errorf(
 					"observe rename state for %s/%s/%s: %w",
 					result.Source,
 					result.Namespace,
@@ -285,7 +302,8 @@ func (s *Service) apply(
 			s.renameMaxAttempts,
 		)
 		if err != nil {
-			return nil, fmt.Errorf(
+			result.Error = err.Error()
+			return results, fmt.Errorf(
 				"prepare rename for %s/%s/%s: %w",
 				result.Source,
 				result.Namespace,
@@ -306,7 +324,8 @@ func (s *Service) apply(
 		case state.DispositionObserved:
 			result.Action = ""
 		default:
-			return nil, fmt.Errorf(
+			result.Error = fmt.Sprintf("unknown rename disposition %q", decision.Disposition)
+			return results, fmt.Errorf(
 				"prepare rename for %s/%s/%s: unknown disposition %q",
 				result.Source,
 				result.Namespace,
@@ -316,6 +335,9 @@ func (s *Service) apply(
 		}
 	}
 
+	completed := 0
+	var progressMu sync.Mutex
+	s.logger.InfoContext(ctx, "Applying device names", "progress", true, "current", 0, "total", len(jobs), "unit", "attempts")
 	jobChannel := make(chan job, len(jobs))
 	for _, item := range jobs {
 		jobChannel <- item
@@ -336,6 +358,10 @@ func (s *Service) apply(
 					continue
 				}
 				s.submitRename(ctx, &results[item.index], item.device, item.decision)
+				progressMu.Lock()
+				completed++
+				s.logger.InfoContext(ctx, "Applying device names", "progress", true, "current", completed, "total", len(jobs), "unit", "attempts", "progress_final", completed == len(jobs))
+				progressMu.Unlock()
 			}
 		}()
 	}
@@ -365,6 +391,7 @@ func (s *Service) submitRename(
 	source := s.sourcesByName[result.Source]
 	key := itemKey(result.Item)
 	stateSerial := stateSerialNumber(result.ID, result.SerialNumber)
+	s.logger.DebugContext(ctx, "Submitting rename", "source", result.Source, "id", result.ID)
 	err := source.Rename(ctx, device, result.DesiredName)
 	if err == nil {
 		if stateErr := s.ledger.MarkSubmitted(key, stateSerial, result.DesiredName); stateErr != nil {
@@ -432,4 +459,19 @@ func cloneGroups(groups map[string][]string) map[string][]string {
 		sort.Strings(result[alias])
 	}
 	return result
+}
+
+func (s *Service) stage(ctx context.Context, message string) func(error) {
+	started := time.Now()
+	s.logger.InfoContext(ctx, message, "stage", true)
+	var once sync.Once
+	return func(err error) {
+		once.Do(func() {
+			result := []any{"stage_result", true, "elapsed", time.Since(started).Round(time.Millisecond)}
+			if err != nil {
+				result = append(result, "error", err)
+			}
+			s.logger.InfoContext(ctx, message, result...)
+		})
+	}
 }

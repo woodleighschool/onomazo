@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"log/slog"
 	"time"
 
 	"github.com/woodleighschool/onomazo/internal/domain"
@@ -55,6 +56,7 @@ type Result struct {
 
 // Options contains the dependencies and timing policy for one service.
 type Options struct {
+	Logger            *slog.Logger
 	Sources           []DeviceSource
 	Identity          IdentityResolver
 	GroupAliases      map[string][]string

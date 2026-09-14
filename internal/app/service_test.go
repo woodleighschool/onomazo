@@ -1,8 +1,11 @@
 package app
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
+	"log/slog"
 	"net/http"
 	"reflect"
 	"slices"
@@ -85,6 +88,8 @@ func TestReconcileSeparatesProviderNamespaces(t *testing.T) {
 		Ledger: intentLedger,
 	})
 
+	var logs bytes.Buffer
+	service.logger = slog.New(slog.NewJSONHandler(&logs, nil))
 	results := mustReconcile(t, service, true)
 	if got, want := len(results), 2; got != want {
 		t.Fatalf("results = %d, want %d", got, want)
@@ -111,6 +116,28 @@ func TestReconcileSeparatesProviderNamespaces(t *testing.T) {
 	}
 	if got, want := []string{intents[0].Namespace, intents[1].Namespace}, []string{"computers", "mobile_devices"}; !reflect.DeepEqual(got, want) {
 		t.Errorf("intent namespaces = %#v, want %#v", got, want)
+	}
+
+	var completed []int
+	decoder := json.NewDecoder(&logs)
+	for decoder.More() {
+		var record struct {
+			Message        string `json:"msg"`
+			Progress       bool
+			Current, Total int
+		}
+		if err := decoder.Decode(&record); err != nil {
+			t.Fatal(err)
+		}
+		if record.Progress && record.Message == "Applying device names" {
+			if record.Total != len(results) {
+				t.Fatalf("total %d, results %d", record.Total, len(results))
+			}
+			completed = append(completed, record.Current)
+		}
+	}
+	if !slices.Equal(completed, []int{0, 1, 2}) {
+		t.Fatalf("completed renames: %v", completed)
 	}
 }
 
@@ -453,6 +480,7 @@ func (p fakePlanner) Plan(records []planner.Record) ([]planner.Item, error) {
 }
 
 type spyLedger struct {
+	err          error
 	prepareCount int
 	observeCount int
 }
@@ -487,7 +515,7 @@ func (l *spyLedger) Prepare(
 	int,
 ) (state.Decision, error) {
 	l.prepareCount++
-	return state.Decision{Disposition: state.DispositionSubmit, Attempts: 1}, nil
+	return state.Decision{Disposition: state.DispositionSubmit, Attempts: 1}, l.err
 }
 
 func (*spyLedger) MarkFailed(state.Key, string, string, string) error {
@@ -504,7 +532,7 @@ func (*spyLedger) MarkSubmitted(state.Key, string, string) error {
 
 func (l *spyLedger) Observe(state.Key, string, string) (bool, error) {
 	l.observeCount++
-	return false, nil
+	return false, l.err
 }
 
 func newTestService(t *testing.T, options Options) *Service {
@@ -586,4 +614,25 @@ func mustReconcile(t *testing.T, service *Service, apply bool) []Result {
 		t.Fatalf("Reconcile() error = %v", err)
 	}
 	return results
+}
+
+func TestStateFailureRetainsDeviceResults(t *testing.T) {
+	for _, rename := range []bool{false, true} {
+		source := &fakeSource{name: "fixture", devices: []domain.Device{fixtureDevice("CURRENT", "Model", "")}}
+		failure := errors.New("state unavailable")
+		service := newTestService(t, Options{
+			Sources: []DeviceSource{source}, Ledger: &spyLedger{err: failure},
+			Planner: fakePlanner{plan: func(records []planner.Record) ([]planner.Item, error) {
+				item := unchangedItem(records[0], "CURRENT")
+				if rename {
+					item = renameItem(records[0], "DESIRED")
+				}
+				return []planner.Item{item}, nil
+			}},
+		})
+		results, err := service.Reconcile(t.Context(), true)
+		if !errors.Is(err, failure) || len(results) != 1 || results[0].Error != failure.Error() || source.renameCount != 0 {
+			t.Fatalf("rename %t: results=%#v error=%v writes=%d", rename, results, err, source.renameCount)
+		}
+	}
 }

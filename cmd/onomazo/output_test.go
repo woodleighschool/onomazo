@@ -3,56 +3,13 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"io"
+	"errors"
 	"strings"
 	"testing"
 
 	"github.com/woodleighschool/onomazo/internal/app"
 	"github.com/woodleighschool/onomazo/internal/planner"
 )
-
-func TestWriteJSONPlanKeepsBaselineComparisonFields(t *testing.T) {
-	t.Parallel()
-	result := app.Result{
-		Source:       "fixture",
-		Namespace:    "devices",
-		ID:           "device-1",
-		SerialNumber: "SERIAL-1",
-		Platform:     "ios",
-		CurrentName:  "OLD-NAME",
-		DesiredName:  "NEW-NAME",
-		User:         "unit@example.invalid",
-		Rule:         "fixture-rule",
-		Status:       planner.StatusRename,
-		Reason:       "name differs",
-		Action:       app.ActionPlanned,
-	}
-	var output bytes.Buffer
-	if err := writePlan(&output, "json", false, []app.Result{result}); err != nil {
-		t.Fatalf("writePlan() error = %v", err)
-	}
-	var record map[string]any
-	if err := json.Unmarshal(output.Bytes(), &record); err != nil {
-		t.Fatalf("decode plan: %v", err)
-	}
-	want := map[string]string{
-		"msg":       "device rename planned",
-		"namespace": "devices",
-		"device":    "OLD-NAME",
-		"platform":  "ios",
-		"serial":    "SERIAL-1",
-		"user":      "unit@example.invalid",
-		"to":        "NEW-NAME",
-		"rule":      "fixture-rule",
-		"status":    "rename",
-		"action":    "planned",
-	}
-	for field, wantValue := range want {
-		if got := record[field]; got != wantValue {
-			t.Errorf("%s = %#v, want %#v", field, got, wantValue)
-		}
-	}
-}
 
 func TestWriteHumanPlanUsesAlignedColumns(t *testing.T) {
 	t.Parallel()
@@ -81,7 +38,7 @@ func TestWriteHumanPlanUsesAlignedColumns(t *testing.T) {
 			Reason:       "no naming rule matched"},
 	}
 	var output bytes.Buffer
-	if err := writePlan(&output, "human", false, results); err != nil {
+	if err := writeReport(&output, "text", false, false, results, nil); err != nil {
 		t.Fatalf("writePlan() error = %v", err)
 	}
 	lines := strings.Split(strings.TrimSuffix(output.String(), "\n"), "\n")
@@ -120,36 +77,12 @@ func TestWriteHumanPlanUsesAlignedColumns(t *testing.T) {
 	}
 }
 
-func TestWriteJSONPlanKeepsEmptyComparisonFields(t *testing.T) {
-	t.Parallel()
-	result := app.Result{
-		Source:       "fixture",
-		ID:           "device-1",
-		SerialNumber: "SERIAL-1",
-		Platform:     "macos",
-		CurrentName:  "FIXTURE",
-		Status:       planner.StatusUnmanaged}
-	var jsonOutput bytes.Buffer
-	if err := writePlan(&jsonOutput, "json", false, []app.Result{result}); err != nil {
-		t.Fatalf("writePlan(json) error = %v", err)
-	}
-	var record map[string]any
-	if err := json.Unmarshal(jsonOutput.Bytes(), &record); err != nil {
-		t.Fatalf("decode plan: %v", err)
-	}
-	for _, field := range []string{"user", "to", "rule", "action"} {
-		if value, exists := record[field]; !exists || value != "" {
-			t.Errorf("%s = %#v, exists %t, want empty field", field, value, exists)
-		}
-	}
-}
-
 func TestWriteHumanPlanIncludesUnchangedOnlyWithAll(t *testing.T) {
 	t.Parallel()
 	for _, all := range []bool{false, true} {
 		var output bytes.Buffer
 		results := outputFixture()
-		if err := writePlan(&output, "human", all, results); err != nil {
+		if err := writeReport(&output, "text", all, false, results, nil); err != nil {
 			t.Fatal(err)
 		}
 		text := output.String()
@@ -165,30 +98,6 @@ func TestWriteHumanPlanIncludesUnchangedOnlyWithAll(t *testing.T) {
 	}
 }
 
-func TestWriteJSONPlanAlwaysIncludesEveryDevice(t *testing.T) {
-	t.Parallel()
-	for _, all := range []bool{false, true} {
-		var output bytes.Buffer
-		results := outputFixture()
-		if err := writePlan(&output, "json", all, results); err != nil {
-			t.Fatal(err)
-		}
-		decoder := json.NewDecoder(&output)
-		for _, result := range results {
-			var record planOutput
-			if err := decoder.Decode(&record); err != nil {
-				t.Fatal(err)
-			}
-			if record.Serial != result.SerialNumber || record.Status != result.Status {
-				t.Errorf("all %t: record = %#v, want device %s with status %s", all, record, result.SerialNumber, result.Status)
-			}
-		}
-		if err := decoder.Decode(new(planOutput)); err != io.EOF {
-			t.Errorf("all %t: trailing output error = %v, want EOF", all, err)
-		}
-	}
-}
-
 func outputFixture() []app.Result {
 	return []app.Result{
 		{SerialNumber: "SERIAL-1", Status: planner.StatusRename, CurrentName: "OLD", DesiredName: "NEW", Reason: "name differs", Action: app.ActionPlanned},
@@ -197,5 +106,44 @@ func outputFixture() []app.Result {
 		{SerialNumber: "SERIAL-4", Status: planner.StatusUnmanaged, Reason: "no naming rule matched"},
 		{SerialNumber: "SERIAL-5", Status: planner.StatusInvalid, Reason: "desired name exceeds length limit"},
 		{SerialNumber: "SERIAL-6", Status: planner.StatusUnresolved, Reason: "variable resolved to conflicting values"},
+	}
+}
+
+func TestJSONReportRetainsEveryDeviceAndPartialFailures(t *testing.T) {
+	for _, all := range []bool{false, true} {
+		results := outputFixture()
+		results[0].Action, results[0].Error = app.ActionPending, "provider unavailable"
+		var output bytes.Buffer
+		if err := writeReport(&output, "json", all, true, results, errors.New("one rename failed")); err != nil {
+			t.Fatal(err)
+		}
+		var report reconciliationReport
+		if err := json.Unmarshal(output.Bytes(), &report); err != nil {
+			t.Fatal(err)
+		}
+		if len(report.Devices) != len(results) || report.Error != "one rename failed" {
+			t.Fatalf("report = %#v", report)
+		}
+		device := report.Devices[0]
+		if device.CurrentName != "OLD" || device.DesiredName != "NEW" || device.Action != app.ActionPending || device.Error != "provider unavailable" {
+			t.Fatalf("device = %#v", device)
+		}
+	}
+}
+
+func TestHumanApplyReportsSubmittedAndPendingRenames(t *testing.T) {
+	results := []app.Result{
+		{SerialNumber: "FIRST", Status: planner.StatusRename, Action: app.ActionSubmitted},
+		{SerialNumber: "SECOND", Status: planner.StatusRename, Action: app.ActionPending, Error: "try again"},
+		{SerialNumber: "THIRD", Status: planner.StatusUnchanged, Error: "state unavailable"},
+	}
+	var output bytes.Buffer
+	if err := writeReport(&output, "text", false, true, results, errors.New("try again")); err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{"submitted", "pending", "try again", "THIRD", "state unavailable", "Renames: 1 submitted, 1 pending, 0 failed"} {
+		if !strings.Contains(output.String(), want) {
+			t.Errorf("missing %q: %s", want, output.String())
+		}
 	}
 }

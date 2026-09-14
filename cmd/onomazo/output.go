@@ -10,48 +10,41 @@ import (
 	"github.com/woodleighschool/onomazo/internal/planner"
 )
 
-type planOutput struct {
-	Message   string         `json:"msg"`
-	Source    string         `json:"source"`
-	Namespace string         `json:"namespace"`
-	ID        string         `json:"id"`
-	Device    string         `json:"device"`
-	Platform  string         `json:"platform"`
-	Serial    string         `json:"serial"`
-	User      string         `json:"user"`
-	To        string         `json:"to"`
-	Rule      string         `json:"rule"`
-	Status    planner.Status `json:"status"`
-	Reason    string         `json:"reason,omitempty"`
-	Action    app.Action     `json:"action"`
+type reconciliationReport struct {
+	Devices []app.Result `json:"devices,omitzero"`
+	Error   string       `json:"error,omitempty"`
 }
 
-func writePlan(writer io.Writer, output string, includeUnchanged bool, results []app.Result) error {
+func writeReport(writer io.Writer, output string, includeUnchanged, apply bool, results []app.Result, runErr error) error {
+	report := reconciliationReport{Devices: results}
+	if runErr != nil {
+		report.Error = runErr.Error()
+	}
 	if output == "json" {
 		encoder := json.NewEncoder(writer)
 		encoder.SetEscapeHTML(false)
-		for _, result := range results {
-			if err := encoder.Encode(newPlanOutput(result)); err != nil {
-				return fmt.Errorf("write JSON plan: %w", err)
-			}
-		}
-		return nil
+		return encoder.Encode(report)
+	}
+	if results == nil && runErr != nil {
+		_, err := fmt.Fprintln(writer, "No device results available.")
+		return err
 	}
 	table := tabwriter.NewWriter(writer, 0, 4, 2, ' ', 0)
 	if _, err := fmt.Fprintln(
 		table,
-		"STATUS\tSOURCE\tPLATFORM\tCURRENT\tDESIRED\tSERIAL\tUSER\tRULE\tREASON",
+		"STATUS\tACTION\tSOURCE\tPLATFORM\tCURRENT\tDESIRED\tSERIAL\tUSER\tRULE\tREASON\tERROR",
 	); err != nil {
 		return fmt.Errorf("write plan header: %w", err)
 	}
 	for _, result := range results {
-		if !includeUnchanged && result.Status == planner.StatusUnchanged {
+		if !includeUnchanged && result.Status == planner.StatusUnchanged && result.Error == "" {
 			continue
 		}
 		if _, err := fmt.Fprintf(
 			table,
-			"%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
+			"%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
 			result.Status,
+			result.Action,
 			result.Source,
 			result.Platform,
 			result.CurrentName,
@@ -60,6 +53,7 @@ func writePlan(writer io.Writer, output string, includeUnchanged bool, results [
 			result.User,
 			result.Rule,
 			result.Reason,
+			result.Error,
 		); err != nil {
 			return fmt.Errorf("write plan: %w", err)
 		}
@@ -82,27 +76,12 @@ func writePlan(writer io.Writer, output string, includeUnchanged bool, results [
 		counts[planner.StatusInvalid],
 		counts[planner.StatusUnresolved],
 	)
+	if err != nil {
+		return err
+	}
+	if apply {
+		_, err = fmt.Fprintf(writer, "Renames: %d submitted, %d pending, %d failed\n",
+			countAction(results, app.ActionSubmitted), countAction(results, app.ActionPending), countAction(results, app.ActionFailed))
+	}
 	return err
-}
-
-func newPlanOutput(result app.Result) planOutput {
-	message := "device evaluated"
-	if result.Action == app.ActionPlanned {
-		message = "device rename planned"
-	}
-	return planOutput{
-		Message:   message,
-		Source:    result.Source,
-		Namespace: result.Namespace,
-		ID:        result.ID,
-		Device:    result.CurrentName,
-		Platform:  result.Platform,
-		Serial:    result.SerialNumber,
-		User:      result.User,
-		To:        result.DesiredName,
-		Rule:      result.Rule,
-		Status:    result.Status,
-		Reason:    result.Reason,
-		Action:    result.Action,
-	}
 }

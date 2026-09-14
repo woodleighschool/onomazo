@@ -7,7 +7,7 @@ import (
 	"github.com/invopop/jsonschema"
 )
 
-//go:generate go run ../../cmd/onomazo schema --output ../../onomazo.schema.json
+//go:generate go run ../../cmd/onomazo schema --output-file ../../onomazo.schema.json
 
 // JSONSchema returns the editor-facing structural schema generated from Config's YAML tags.
 func JSONSchema() *jsonschema.Schema {

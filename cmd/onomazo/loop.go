@@ -84,7 +84,11 @@ func logResult(logger *slog.Logger, result app.Result, initialCycle bool) {
 	}
 	switch result.Action {
 	case app.ActionPlanned:
-		logger.Info("device rename planned", attributes...)
+		if result.Error != "" {
+			logger.Warn("device rename preparation failed", attributes...)
+		} else {
+			logger.Info("device rename planned", attributes...)
+		}
 	case app.ActionSubmitted:
 		if result.Error == "" {
 			logger.Info("device rename submitted", attributes...)
@@ -104,9 +108,12 @@ func logResult(logger *slog.Logger, result app.Result, initialCycle bool) {
 	case app.ActionFailed:
 		logger.Warn("device rename failed", attributes...)
 	default:
-		if result.Status == planner.StatusInvalid || result.Status == planner.StatusUnresolved {
+		switch {
+		case result.Error != "":
+			logger.Warn("device state update failed", attributes...)
+		case result.Status == planner.StatusInvalid || result.Status == planner.StatusUnresolved:
 			logger.Warn("device naming issue", append(attributes, "reason", result.Reason)...)
-		} else {
+		default:
 			logger.Debug("device evaluated", append(attributes, "reason", result.Reason)...)
 		}
 	}

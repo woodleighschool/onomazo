@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log/slog"
 	"slices"
 
 	"github.com/woodleighschool/onomazo/internal/config"
@@ -15,7 +16,7 @@ import (
 )
 
 // Build creates provider clients, state, and a service from a validated configuration.
-func Build(cfg *config.Config, mode BuildMode) (*Service, error) {
+func Build(cfg *config.Config, mode BuildMode, logger *slog.Logger) (*Service, error) {
 	if cfg == nil {
 		return nil, fmt.Errorf("config is required")
 	}
@@ -113,6 +114,7 @@ func Build(cfg *config.Config, mode BuildMode) (*Service, error) {
 		return nil, fmt.Errorf("open rename state: %w", err)
 	}
 	service, err := New(Options{
+		Logger:            logger,
 		Sources:           sources,
 		Identity:          identity,
 		GroupAliases:      groupAliases,
