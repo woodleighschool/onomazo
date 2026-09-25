@@ -39,7 +39,7 @@ Fill `.env` with values for the `${...}` names in `config.yaml`. The container c
 
 If `config.yaml` is in the current directory, `--config` may be omitted. Multiple `--config` flags apply overlays in order.
 
-Human plans omit unchanged devices by default and include summary counts for the complete inventory. Excluded, unmanaged, invalid, and unresolved devices remain visible. Use `plan --all` to include unchanged devices; `--output text` (default) writes a readable report. `--output json` writes one report object containing every device with its planned name and actual action outcome.
+Plans and apply reports show current and desired names, the matching policy, and request outcomes. Unchanged devices are omitted by default; excluded, unmanaged, invalid, unresolved, and failed devices remain visible. `--all` includes unchanged devices in human output. `--json` includes the complete inventory and its summary counts in one final report.
 
 ### Run once
 
@@ -72,26 +72,33 @@ docker run --rm \
   ghcr.io/woodleighschool/onomazo:rolling
 ```
 
-Stages and diagnostics go to stderr; reports go to stdout. Finite commands show
-indented operation rows beneath a reconciliation heading, with measured counts where available and a spinner for
-waiting work. Completed results remain in scrollback. Colours respect `NO_COLOR`.
-Successful operation trees collapse to their heading; failures remain expanded.
-Redirected output and CI use log lines, with intermediate progress at debug level. `--no-progress` disables animation. `--quiet` (`-q`) keeps warnings and errors;
-`--verbose` (`-v`) and `--debug` (`-d`) enable debug diagnostics. Use `--log-level
-debug|info|warn|error` for an explicit threshold. Log levels leave reports intact.
-`--output text` (default) writes a readable report. `--output json` writes one report object, including partial results and an `error`
-when execution fails. `--log-format json` writes JSON diagnostic records.
+Reports go to stdout. A suitable stderr terminal shows delayed active operations,
+with counts and bars for known totals. Completed activity disappears before the
+report. JSON, CI and dumb terminals suppress progress; `--no-progress` disables
+it explicitly. `NO_COLOR` controls colour. Warnings and command errors go to stderr.
+Reports keep useful partial results when applying fails; failures before a plan
+exists leave stdout empty.
+`schema` writes native JSON Schema, and `version` and `validate` print their
+ordinary text results.
 
-`run` defaults to JSON diagnostics with no animation. Startup, shutdown and
-material changes use `info`; routine stages and unchanged cycles use `debug`.
-`--log-format text` selects readable service logs. Cycles continue after failures;
+`plan` describes naming-policy differences. It does not predict whether an
+existing intention permits another submission. `apply` distinguishes submitted,
+pending, retry-eligible, failed, and unsubmitted requests. An accepted request
+awaits confirmation in a later inventory snapshot; it is not reported as a
+completed device rename. Retry times indicate eligibility on a subsequent
+`apply` or `run` cycle, not a background retry after `apply` exits.
+
+`run` writes JSON diagnostic records to stderr and no report to stdout. Startup,
+shutdown, and submissions use `info`; routine stages and unchanged cycles use
+`debug`. Configure its level through YAML or `ONOMAZO_LOG_LEVEL`, or override it
+with `run --log-level debug|info|warn|error`. Cycles continue after failures;
 `apply` exits unsuccessfully when its cycle fails.
 
 ## ⚙️ Configuration
 
 Configuration is strict: unknown fields fail, lists replace earlier lists, and mappings merge recursively. Environment placeholders must occupy the whole value, such as `${JAMF_CLIENT_SECRET}`.
 
-Runtime settings resolve from `ONOMAZO_*` environment variables, then the corresponding YAML value, then the default. Explicit CLI logging flags override the configured log level.
+Runtime settings resolve from `ONOMAZO_*` environment variables, then the corresponding YAML value, then the default. `run --log-level` overrides the configured log level; finite commands always retain warnings and errors.
 
 | Environment variable                    | YAML fallback                   | Default  |
 | --------------------------------------- | ------------------------------- | -------- |

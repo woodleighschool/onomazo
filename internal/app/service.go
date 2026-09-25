@@ -11,6 +11,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/dustin/go-humanize"
+
 	"github.com/woodleighschool/onomazo/internal/domain"
 	"github.com/woodleighschool/onomazo/internal/planner"
 	"github.com/woodleighschool/onomazo/internal/state"
@@ -118,17 +120,19 @@ func (s *Service) Reconcile(ctx context.Context, apply bool) (result []Result, r
 	done := s.stage(ctx, "Fetching device inventories")
 	defer func() { done(runErr) }()
 	fresh, err := s.listDevices(ctx)
-	done(err)
 	if err != nil {
+		done(err)
 		return nil, err
 	}
+	done(nil, "detail", humanize.Comma(int64(len(fresh)))+" devices")
 	devices := s.refreshDevices(fresh, now)
 	done = s.stage(ctx, "Resolving identities")
 	users, err := s.resolveUsers(ctx, devices, now)
-	done(err)
 	if err != nil {
+		done(err)
 		return nil, err
 	}
+	done(nil, "detail", humanize.Comma(int64(len(users)))+" users")
 	records := make([]planner.Record, len(devices))
 	devicesByKey := make(map[state.Key]domain.Device, len(devices))
 	for index, device := range devices {
@@ -137,17 +141,20 @@ func (s *Service) Reconcile(ctx context.Context, apply bool) (result []Result, r
 	}
 	done = s.stage(ctx, "Planning device names")
 	items, err := s.planner.Plan(records)
-	done(err)
 	if err != nil {
+		done(err)
 		return nil, fmt.Errorf("plan device names: %w", err)
 	}
 	results := make([]Result, len(items))
+	renames := 0
 	for index, item := range items {
 		results[index].Item = item
 		if item.Status == planner.StatusRename {
 			results[index].Action = ActionPlanned
+			renames++
 		}
 	}
+	done(nil, "detail", humanize.Comma(int64(renames))+" renames")
 	if !apply {
 		return results, nil
 	}
@@ -461,13 +468,16 @@ func cloneGroups(groups map[string][]string) map[string][]string {
 	return result
 }
 
-func (s *Service) stage(ctx context.Context, message string) func(error) {
+// stage starts an operation and returns its completion function, which takes
+// the operation error and attributes describing its result, such as a detail
+// for the live tree.
+func (s *Service) stage(ctx context.Context, message string) func(error, ...any) {
 	started := time.Now()
 	s.logger.InfoContext(ctx, message, "stage", true)
 	var once sync.Once
-	return func(err error) {
+	return func(err error, details ...any) {
 		once.Do(func() {
-			result := []any{"stage_result", true, "elapsed", time.Since(started).Round(time.Millisecond)}
+			result := append([]any{"stage_result", true, "elapsed", time.Since(started).Round(time.Millisecond)}, details...)
 			if err != nil {
 				result = append(result, "error", err)
 			}

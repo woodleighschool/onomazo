@@ -11,8 +11,13 @@ import (
 	"github.com/woodleighschool/onomazo/internal/config"
 )
 
+type cli struct {
+	configPaths []string
+	output      *commandOutput
+}
+
 func newRootCommand() (*cobra.Command, *commandOutput) {
-	var configPaths []string
+	c := &cli{output: &commandOutput{}}
 	command := &cobra.Command{
 		Use:           "onomazo",
 		Short:         "Reconcile managed device names",
@@ -24,21 +29,23 @@ func newRootCommand() (*cobra.Command, *commandOutput) {
 			return command.Help()
 		},
 	}
-	output := newCommandOutput(command)
+	output := c.output
 	command.PersistentPreRunE = func(cmd *cobra.Command, _ []string) error {
 		return output.start(cmd)
 	}
+	command.SetVersionTemplate(fmt.Sprintf("onomazo %s\ncommit: %s\nbuilt: %s\n", version, commit, date))
+	command.PersistentFlags().Bool("no-progress", false, "Disable terminal progress")
 	command.PersistentFlags().StringArrayVar(
-		&configPaths,
+		&c.configPaths,
 		"config",
 		defaultConfigPaths(),
 		"path to a YAML configuration file; may be repeated in overlay order",
 	)
 	command.AddCommand(
-		newValidateCommand(&configPaths, output),
-		newReconciliationCommand(&configPaths, output, false),
-		newReconciliationCommand(&configPaths, output, true),
-		newRunCommand(&configPaths, output),
+		c.validateCommand(),
+		c.reconciliationCommand(false),
+		c.reconciliationCommand(true),
+		c.runCommand(),
 		newSchemaCommand(),
 		newVersionCommand(),
 	)
@@ -53,13 +60,13 @@ func defaultConfigPaths() []string {
 	return []string{"config.yaml"}
 }
 
-func newValidateCommand(configPaths *[]string, diagnostics *commandOutput) *cobra.Command {
+func (c *cli) validateCommand() *cobra.Command {
 	return &cobra.Command{
 		Use:   "validate",
 		Short: "Validate configuration and naming expressions",
 		Args:  cobra.NoArgs,
 		RunE: func(command *cobra.Command, _ []string) error {
-			if _, err := loadConfig(command, *configPaths, diagnostics); err != nil {
+			if _, err := c.loadConfig(command); err != nil {
 				return fmt.Errorf("validate configuration: %w", err)
 			}
 			_, err := fmt.Fprintln(command.OutOrStdout(), "configuration valid")
@@ -68,9 +75,9 @@ func newValidateCommand(configPaths *[]string, diagnostics *commandOutput) *cobr
 	}
 }
 
-func newReconciliationCommand(configPaths *[]string, diagnostics *commandOutput, apply bool) *cobra.Command {
+func (c *cli) reconciliationCommand(apply bool) *cobra.Command {
 	var includeUnchanged bool
-	var output string
+	var jsonOutput bool
 	name, description := "plan", "Fetch complete snapshots and print a read-only reconciliation plan"
 	if apply {
 		name, description = "apply", "Apply one reconciliation cycle and print its result"
@@ -80,10 +87,7 @@ func newReconciliationCommand(configPaths *[]string, diagnostics *commandOutput,
 		Short: description,
 		Args:  cobra.NoArgs,
 		RunE: func(command *cobra.Command, _ []string) error {
-			if output != "text" && output != "json" {
-				return fmt.Errorf("output must be text or json")
-			}
-			cfg, err := loadConfig(command, *configPaths, diagnostics)
+			cfg, err := c.loadConfig(command)
 			if err != nil {
 				return err
 			}
@@ -91,40 +95,51 @@ func newReconciliationCommand(configPaths *[]string, diagnostics *commandOutput,
 			if apply {
 				mode = app.BuildApply
 			}
-			service, err := app.Build(cfg, mode, diagnostics.logger)
+			service, err := app.Build(cfg, mode, c.output.logger)
 			if err != nil {
 				return fmt.Errorf("start service: %w", err)
 			}
 			results, reconcileErr := service.Reconcile(command.Context(), apply)
-			reconcileErr = errors.Join(reconcileErr, service.Close())
-			diagnostics.endProgress(reconcileErr)
-			return errors.Join(reconcileErr, writeReport(command.OutOrStdout(), output, includeUnchanged, apply, results, reconcileErr))
+			closeErr := service.Close()
+			c.output.stop()
+			if results == nil {
+				return errors.Join(reconcileErr, closeErr)
+			}
+			if err := writeReport(command.OutOrStdout(), jsonOutput, includeUnchanged, apply, results, errors.Join(reconcileErr, closeErr)); err != nil {
+				return errors.Join(reconcileErr, closeErr, err)
+			}
+			if reconcileErr != nil {
+				return errors.Join(&reportError{command: name, cause: reconcileErr}, closeErr)
+			}
+			return closeErr
 		},
 	}
-	command.Flags().BoolVar(&includeUnchanged, "all", false, "Include unchanged devices in human output")
-	command.Flags().StringVar(&output, "output", "text", "Report format: text or json")
+	command.Flags().BoolVar(&includeUnchanged, "all", false, "Include unchanged devices in the human report")
+	command.Flags().BoolVar(&jsonOutput, "json", false, "Write the final report as JSON")
 	return command
 }
 
-func newRunCommand(configPaths *[]string, diagnostics *commandOutput) *cobra.Command {
-	return &cobra.Command{
+func (c *cli) runCommand() *cobra.Command {
+	command := &cobra.Command{
 		Use:   "run",
 		Short: "Reconcile immediately, then continue at the configured interval",
 		Args:  cobra.NoArgs,
 		RunE: func(command *cobra.Command, _ []string) error {
-			cfg, err := loadConfig(command, *configPaths, diagnostics)
+			cfg, err := c.loadConfig(command)
 			if err != nil {
 				return err
 			}
-			service, err := app.Build(cfg, app.BuildApply, diagnostics.logger)
+			service, err := app.Build(cfg, app.BuildApply, c.output.logger)
 			if err != nil {
 				return fmt.Errorf("start service: %w", err)
 			}
-			diagnostics.logger.Info("Service started", "version", version)
-			runLoop(command.Context(), cfg.Reconcile.PollInterval.Duration, service, diagnostics.logger)
+			c.output.logger.Info("Service started", "version", version)
+			runLoop(command.Context(), cfg.Reconcile.PollInterval.Duration, service, c.output.logger)
 			return service.Close()
 		},
 	}
+	command.Flags().StringVar(&c.output.level, "log-level", "info", "Override the configured log level: debug, info, warn or error")
+	return command
 }
 
 func newSchemaCommand() *cobra.Command {
@@ -164,14 +179,14 @@ func newVersionCommand() *cobra.Command {
 	}
 }
 
-func loadConfig(command *cobra.Command, paths []string, diagnostics *commandOutput) (*config.Config, error) {
-	cfg, err := config.Load(paths...)
+func (c *cli) loadConfig(command *cobra.Command) (*config.Config, error) {
+	cfg, err := config.Load(c.configPaths...)
 	if err != nil {
 		return nil, fmt.Errorf("load configuration: %w", err)
 	}
-	if !diagnostics.explicitLevel {
-		diagnostics.threshold.Set(cfg.ParsedLevel)
+	if c.output.daemon && !command.Flags().Changed("log-level") {
+		c.output.threshold.Set(cfg.ParsedLevel)
 	}
-	diagnostics.logger.DebugContext(command.Context(), "Loading application")
+	c.output.logger.DebugContext(command.Context(), "Loading application")
 	return cfg, nil
 }
