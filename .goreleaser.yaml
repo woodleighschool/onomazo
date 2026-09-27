@@ -5,7 +5,7 @@ project_name: onomazo
 
 before:
   hooks:
-    - mise run tidy-check
+    - go mod tidy
 
 builds:
   - id: onomazo
