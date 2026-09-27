@@ -1,4 +1,9 @@
 {
-  "ignorePatterns": ["onomazo.schema.json"],
+  "ignorePatterns": [
+    "CHANGELOG.md",
+    ".release-please-manifest.json",
+    ".mise/locks/",
+    "onomazo.schema.json",
+  ],
   "printWidth": 100,
 }
