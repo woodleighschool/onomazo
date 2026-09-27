@@ -17,9 +17,13 @@ WORKDIR /workspace
 # Cache module downloads before copying source.
 COPY go.mod go.sum ./
 RUN go mod download
+RUN go install github.com/google/go-licenses/v2@v2.0.1
 
 COPY cmd/ cmd/
 COPY internal/ internal/
+
+RUN CGO_ENABLED=0 GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH} \
+    go-licenses save ./cmd/onomazo --save_path third_party_licenses --ignore github.com/woodleighschool/onomazo --force
 
 RUN CGO_ENABLED=0 GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH} \
     go build -trimpath \
@@ -31,6 +35,9 @@ RUN upx --best --lzma onomazo
 FROM gcr.io/distroless/static:nonroot
 
 WORKDIR /
+COPY LICENSE /LICENSE
+COPY --from=builder /workspace/third_party_licenses /third_party_licenses
+COPY --from=builder /usr/local/go/LICENSE /third_party_licenses/go/LICENSE
 COPY --from=builder /workspace/onomazo /onomazo
 USER 65532:65532
 ENTRYPOINT ["/onomazo"]
