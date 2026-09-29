@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"net/http"
 	"reflect"
+	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -224,6 +226,53 @@ func assertQueryValues(t *testing.T, request *http.Request, want map[string][]st
 	for key, wantValues := range want {
 		if got := query[key]; !reflect.DeepEqual(got, wantValues) {
 			t.Errorf("query %s = %#v, want %#v", key, got, wantValues)
+		}
+	}
+}
+
+func TestInventoryRejectsIncompleteSnapshots(t *testing.T) {
+	t.Parallel()
+	for _, endpoint := range []struct {
+		name string
+		id   string
+		list func(*Client, context.Context, string) ([]domain.Device, error)
+	}{
+		{"computers", "id", (*Client).ListComputers},
+		{"mobile devices", "mobileDeviceId", (*Client).ListMobileDevices},
+	} {
+		for _, test := range []struct {
+			name  string
+			pages []string
+			want  string
+		}{
+			{"missing envelope", []string{`{}`}, "required"},
+			{"null results", []string{`{"totalCount":0,"results":null}`}, "required"},
+			{"early end", []string{`{"totalCount":2,"results":[{"%s":"1"}]}`, `{"totalCount":2,"results":[]}`}, "ended at"},
+			{"changed total", []string{`{"totalCount":2,"results":[{"%s":"1"}]}`, `{"totalCount":3,"results":[{"%s":"2"}]}`}, "total changed"},
+			{"invalid total", []string{`{"totalCount":-1,"results":[]}`}, "invalid total"},
+			{"excess records", []string{`{"totalCount":0,"results":[{"%s":"1"}]}`}, "invalid total"},
+			{"missing ID", []string{`{"totalCount":1,"results":[{}]}`}, "ID is required"},
+			{"repeated page", []string{`{"totalCount":2,"results":[{"%s":"1"}]}`, `{"totalCount":2,"results":[{"%s":"1"}]}`}, "duplicated"},
+		} {
+			t.Run(endpoint.name+"/"+test.name, func(t *testing.T) {
+				t.Parallel()
+				server := newAuthenticatedServer(t, func(w http.ResponseWriter, r *http.Request) {
+					page, err := strconv.Atoi(r.URL.Query().Get("page"))
+					if err != nil || page < 0 || page >= len(test.pages) {
+						t.Errorf("unexpected page %q", r.URL.Query().Get("page"))
+						w.WriteHeader(http.StatusBadRequest)
+						return
+					}
+					w.Header().Set("Content-Type", "application/json")
+					_, _ = w.Write([]byte(strings.ReplaceAll(test.pages[page], "%s", endpoint.id)))
+				})
+				defer server.Close()
+				client := newClient(server.URL, "fixture-client", "fixture-secret", server.Client(), time.Now)
+				devices, err := endpoint.list(client, t.Context(), "jamf")
+				if err == nil || !strings.Contains(err.Error(), test.want) || devices != nil {
+					t.Fatalf("inventory = %v, %v; want no snapshot and %q error", devices, err, test.want)
+				}
+			})
 		}
 	}
 }
