@@ -636,3 +636,73 @@ func TestStateFailureRetainsDeviceResults(t *testing.T) {
 		}
 	}
 }
+
+func TestListDevicesCancelsAndWaitsForSources(t *testing.T) {
+	t.Parallel()
+	started, stopped := make(chan struct{}), make(chan struct{})
+	failure := errors.New("inventory unavailable")
+	slow := &inventorySource{name: "slow", list: func(ctx context.Context) ([]domain.Device, error) {
+		close(started)
+		<-ctx.Done()
+		close(stopped)
+		return nil, ctx.Err()
+	}}
+	broken := &inventorySource{name: "broken", list: func(ctx context.Context) ([]domain.Device, error) {
+		select {
+		case <-started:
+			return nil, failure
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		}
+	}}
+	service := &Service{sources: []DeviceSource{slow, broken}, logger: slog.New(slog.DiscardHandler)}
+	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+	defer cancel()
+	devices, err := service.listDevices(ctx)
+	if ctx.Err() != nil {
+		t.Fatal("sources did not cancel before the parent deadline")
+	}
+	if !errors.Is(err, failure) || devices != nil {
+		t.Fatalf("listDevices() = %v, %v; want no snapshot and inventory error", devices, err)
+	}
+	select {
+	case <-stopped:
+	default:
+		t.Fatal("listDevices returned before its other source stopped")
+	}
+}
+
+type inventorySource struct {
+	fakeSource
+	list func(context.Context) ([]domain.Device, error)
+}
+
+func (s *inventorySource) ListDevices(ctx context.Context) ([]domain.Device, error) {
+	return s.list(ctx)
+}
+
+func TestListDevicesKeepsSourceOrder(t *testing.T) {
+	t.Parallel()
+	ready := make(chan struct{})
+	first := &inventorySource{name: "first", list: func(ctx context.Context) ([]domain.Device, error) {
+		select {
+		case <-ready:
+			return []domain.Device{{ID: "1", Namespace: "computers"}}, nil
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		}
+	}}
+	second := &inventorySource{name: "second", list: func(context.Context) ([]domain.Device, error) {
+		close(ready)
+		return []domain.Device{{ID: "2", Namespace: "computers"}}, nil
+	}}
+	service := &Service{sources: []DeviceSource{first, second}, logger: slog.New(slog.DiscardHandler)}
+	devices, err := service.listDevices(t.Context())
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []domain.Device{{ID: "1", Namespace: "computers", Source: "first"}, {ID: "2", Namespace: "computers", Source: "second"}}
+	if !reflect.DeepEqual(devices, want) {
+		t.Fatalf("devices = %#v, want %#v", devices, want)
+	}
+}

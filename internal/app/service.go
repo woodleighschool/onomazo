@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/dustin/go-humanize"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/woodleighschool/onomazo/internal/domain"
 	"github.com/woodleighschool/onomazo/internal/planner"
@@ -163,41 +164,41 @@ func (s *Service) Reconcile(ctx context.Context, apply bool) (result []Result, r
 }
 
 func (s *Service) listDevices(ctx context.Context) ([]domain.Device, error) {
-	type sourceResult struct {
-		name    string
-		devices []domain.Device
-		err     error
-	}
-	resultChannel := make(chan sourceResult, len(s.sources))
-	for _, source := range s.sources {
-		go func() {
+	group, ctx := errgroup.WithContext(ctx)
+	bySource := make([][]domain.Device, len(s.sources))
+	var progress sync.Mutex
+	completed := 0
+	for index, source := range s.sources {
+		group.Go(func() error {
 			s.logger.DebugContext(ctx, "Fetching devices", "source", source.Name())
 			devices, err := source.ListDevices(ctx)
-			resultChannel <- sourceResult{name: source.Name(), devices: devices, err: err}
-		}()
+			if err != nil {
+				return fmt.Errorf("list %s devices: %w", source.Name(), err)
+			}
+			for index := range devices {
+				device := &devices[index]
+				if device.ID == "" {
+					return fmt.Errorf("list %s devices: device ID is required", source.Name())
+				}
+				if device.Namespace == "" {
+					return fmt.Errorf("list %s devices: device namespace is required", source.Name())
+				}
+				device.Source = source.Name()
+			}
+			bySource[index] = devices
+			progress.Lock()
+			defer progress.Unlock()
+			completed++
+			s.logger.InfoContext(ctx, "Fetching device inventories", "progress", true, "current", completed, "total", len(s.sources), "unit", "sources", "progress_final", completed == len(s.sources))
+			return nil
+		})
 	}
-	bySource := make(map[string][]domain.Device, len(s.sources))
-	for completed := range len(s.sources) {
-		result := <-resultChannel
-		if result.err != nil {
-			return nil, fmt.Errorf("list %s devices: %w", result.name, result.err)
-		}
-		for index := range result.devices {
-			device := &result.devices[index]
-			if device.ID == "" {
-				return nil, fmt.Errorf("list %s devices: device ID is required", result.name)
-			}
-			if device.Namespace == "" {
-				return nil, fmt.Errorf("list %s devices: device namespace is required", result.name)
-			}
-			device.Source = result.name
-		}
-		bySource[result.name] = result.devices
-		s.logger.InfoContext(ctx, "Fetching device inventories", "progress", true, "current", completed+1, "total", len(s.sources), "unit", "sources", "progress_final", completed+1 == len(s.sources))
+	if err := group.Wait(); err != nil {
+		return nil, err
 	}
 	var devices []domain.Device
-	for _, source := range s.sources {
-		devices = append(devices, bySource[source.Name()]...)
+	for _, source := range bySource {
+		devices = append(devices, source...)
 	}
 	return devices, nil
 }
