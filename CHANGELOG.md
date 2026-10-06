@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.1.6](https://github.com/woodleighschool/onomazo/compare/0.1.5...0.1.6) (2026-08-27)
+## [0.1.6](https://github.com/woodleighschool/onomazo/compare/v0.1.5...v0.1.6) (2026-08-27)
 
 
 ### Documentation
@@ -17,7 +17,7 @@
 
 * **mise:** update tool oxfmt (0.64.0 → 0.65.0) ([#50](https://github.com/woodleighschool/onomazo/issues/50)) ([925d62b](https://github.com/woodleighschool/onomazo/commit/925d62ba0498e72275774c8172876aae42b937af))
 
-## [0.1.5](https://github.com/woodleighschool/onomazo/compare/0.1.4...0.1.5) (2026-08-23)
+## [0.1.5](https://github.com/woodleighschool/onomazo/compare/v0.1.4...v0.1.5) (2026-08-23)
 
 
 ### Bug Fixes
@@ -37,7 +37,7 @@
 * align repository conventions ([a15ae2c](https://github.com/woodleighschool/onomazo/commit/a15ae2cc1fd9a289ef2e0521e403a4aa75060759))
 * **release-please:** sync configuration ([88c3ad4](https://github.com/woodleighschool/onomazo/commit/88c3ad41c3af3f20a99593d64ed302e2fbad37cc))
 
-## [0.1.4](https://github.com/woodleighschool/onomazo/compare/0.1.3...0.1.4) (2026-08-21)
+## [0.1.4](https://github.com/woodleighschool/onomazo/compare/v0.1.3...v0.1.4) (2026-08-21)
 
 
 ### Features
@@ -49,14 +49,14 @@
 
 * document cwd config default ([ffbebfb](https://github.com/woodleighschool/onomazo/commit/ffbebfb413bc02dbb4e1b194c4c604f604e99419))
 
-## [0.1.3](https://github.com/woodleighschool/onomazo/compare/0.1.2...0.1.3) (2026-08-17)
+## [0.1.3](https://github.com/woodleighschool/onomazo/compare/v0.1.2...v0.1.3) (2026-08-17)
 
 
 ### Bug Fixes
 
 * **tooling:** group toolchain updates ([58ae5a4](https://github.com/woodleighschool/onomazo/commit/58ae5a4e50dc77e4b65cf1f692e8e2679023c8d3))
 
-## [0.1.2](https://github.com/woodleighschool/onomazo/compare/0.1.1...0.1.2) (2026-08-12)
+## [0.1.2](https://github.com/woodleighschool/onomazo/compare/v0.1.1...v0.1.2) (2026-08-12)
 
 
 ### Features
@@ -69,7 +69,7 @@
 
 * **renovate:** wait for complete toolchain groups ([7b228b8](https://github.com/woodleighschool/onomazo/commit/7b228b8c09983fc6aa52b8ca945fd4fc3498c6e3))
 
-## [0.1.1](https://github.com/woodleighschool/onomazo/compare/0.1.0...0.1.1) (2026-08-04)
+## [0.1.1](https://github.com/woodleighschool/onomazo/compare/v0.1.0...v0.1.1) (2026-08-04)
 
 
 ### Bug Fixes
@@ -77,7 +77,7 @@
 * **ci:** disable automatic mise installs ([14948bf](https://github.com/woodleighschool/onomazo/commit/14948bfa33368dd44b11587c915767712c8e7fdb))
 * **state:** stop retrying accepted renames ([a412bd6](https://github.com/woodleighschool/onomazo/commit/a412bd622b249d7d8712e24a448bfd4a708069d8))
 
-## [0.1.0](https://github.com/woodleighschool/onomazo/compare/0.0.3...0.1.0) (2026-08-04)
+## [0.1.0](https://github.com/woodleighschool/onomazo/compare/v0.0.3...v0.1.0) (2026-08-04)
 
 
 ### ⚠ BREAKING CHANGES
@@ -89,14 +89,14 @@
 * **config:** remove bootstrap SHA ([5cceba9](https://github.com/woodleighschool/onomazo/commit/5cceba9f5646d289843c53e341078139eeff858b))
 * **logging:** quiet repeated pending renames ([996f507](https://github.com/woodleighschool/onomazo/commit/996f5075dc7fc08568049a366a4855ac11423a7e))
 
-## [0.0.3](https://github.com/woodleighschool/onomazo/compare/0.0.2...0.0.3) (2026-08-03)
+## [0.0.3](https://github.com/woodleighschool/onomazo/compare/v0.0.2...v0.0.3) (2026-08-03)
 
 
 ### Features
 
 * **config:** support ordered configuration overlays ([bb8209e](https://github.com/woodleighschool/onomazo/commit/bb8209e294c86ed02c7e816a4f94e663da5f1005))
 
-## [0.0.2](https://github.com/woodleighschool/onomazo/compare/0.0.1...0.0.2) (2026-08-02)
+## [0.0.2](https://github.com/woodleighschool/onomazo/compare/v0.0.1...v0.0.2) (2026-08-02)
 
 
 ### Features
