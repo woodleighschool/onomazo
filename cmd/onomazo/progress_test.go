@@ -101,7 +101,7 @@ func TestConcurrentStagesKeepWarnings(t *testing.T) {
 	}
 	workers.Wait()
 	command.stop()
-	if got, want := output.String(), strings.Repeat("Warning: Provider notice\n", 4); got != want {
+	if got, want := output.String(), strings.Repeat("! Provider notice\n", 4); got != want {
 		t.Fatalf("persistent progress or lost warnings: %q", got)
 	}
 }

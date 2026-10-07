@@ -57,7 +57,7 @@ func TestValidateAcceptsOrderedConfigurationFiles(t *testing.T) {
 	if err := command.Execute(); err != nil {
 		t.Fatalf("Execute() error = %v", err)
 	}
-	if got, want := output.String(), "configuration valid\n"; got != want {
+	if got, want := output.String(), "✓ Configuration is valid.\n"; got != want {
 		t.Errorf("output = %q, want %q", got, want)
 	}
 }
@@ -169,7 +169,7 @@ naming:
 	command.SetArgs([]string{"plan", "--config", path, "--json"})
 	executed, err := command.ExecuteC()
 	output.finish(executed, err)
-	if err == nil || stdout.Len() != 0 || strings.Count(stderr.String(), "Error:") != 1 {
+	if err == nil || stdout.Len() != 0 || strings.Count(stderr.String(), "✗") != 1 {
 		t.Fatalf("inventory failure: error=%v stdout=%q stderr=%q", err, stdout.String(), stderr.String())
 	}
 }

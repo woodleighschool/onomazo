@@ -70,9 +70,9 @@ func TestApplyReportDistinguishesRequestOutcomes(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, want := range []string{
-		`SUBMITTED  "OLD-1" -> "NEW-1"`, `PENDING  "OLD-2" -> "NEW-2"`, `RETRY  "OLD-3" -> "NEW-3"`,
+		`➤ "OLD-1" → "NEW-1": submitted`, `➤ "OLD-2" → "NEW-2": pending`, `➤ "OLD-3" → "NEW-3": retry`,
 		"awaiting inventory confirmation", "Eligible after 2026-09-23T04:30:00Z on a subsequent apply/run cycle", "Attempts: 2",
-		"FAILED", "NOT SUBMITTED", "unchanged-error", "observe failed", "provider unavailable", "provider rejected request",
+		"failed", "not submitted", "unchanged-error", "observe failed", "provider unavailable", "provider rejected request",
 		"Requests: 1 submitted, 2 pending, 1 failed, 1 not submitted", "Reconciliation incomplete",
 	} {
 		if !strings.Contains(output.String(), want) {
@@ -106,7 +106,7 @@ func TestHumanReportEscapesControlsAndPreservesValues(t *testing.T) {
 			t.Fatalf("control rune %U in %q", r, output.String())
 		}
 	}
-	for _, want := range []string{`"Café\nOLD" -> "NEW"`, `Zoë@example.invalid`, `rule\tname`, `source\x1b[31m`, "PLANNED", "not request eligibility"} {
+	for _, want := range []string{`"Café\nOLD" → "NEW"`, `Zoë@example.invalid`, `rule\tname`, `source\x1b[31m`, "planned", "not request eligibility"} {
 		if !strings.Contains(output.String(), want) {
 			t.Errorf("missing %q in %s", want, output.String())
 		}

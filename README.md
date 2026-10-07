@@ -81,6 +81,8 @@ exists leave stdout empty.
 `schema` writes native JSON Schema, and `version` and `validate` print their
 ordinary text results.
 
+Human reports use `➤` headings and `current → desired` name transitions. A `✓` marks an accepted request; `–` marks one that is waiting. Statuses follow a colon, with identity and policy details on indented `label: value` lines. Warnings use `!` and errors use `✗`.
+
 `plan` describes naming-policy differences. It does not predict whether an
 existing intention permits another submission. `apply` distinguishes submitted,
 pending, retry-eligible, failed, and unsubmitted requests. An accepted request

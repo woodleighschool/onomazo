@@ -68,7 +68,7 @@ func writeReport(writer io.Writer, jsonOutput, includeUnchanged, apply bool, res
 	if apply {
 		heading = "Apply results"
 	}
-	fmt.Fprintf(&text, "%s\n", style.paint(heading, color.Bold))
+	fmt.Fprintf(&text, "%s\n", style.heading(heading))
 	for _, result := range report.Devices {
 		writeDevice(&text, style, result, apply)
 	}
@@ -112,16 +112,16 @@ func writeDevice(text *strings.Builder, style textStyle, result app.Result, appl
 			}
 		}
 	}
-	fmt.Fprintf(text, "\n%s  %s", style.paint(label, color.Bold, labelColour(label)), strconv.Quote(result.CurrentName))
+	name := strconv.Quote(result.CurrentName)
 	if result.DesiredName != "" && result.DesiredName != result.CurrentName {
-		fmt.Fprintf(text, " -> %s", strconv.Quote(result.DesiredName))
+		name += " → " + strconv.Quote(result.DesiredName)
 	}
-	fmt.Fprintf(text, "\n  Device: %s/%s/%s", humanText(result.Source), humanText(result.Namespace), humanText(result.ID))
+	fmt.Fprintf(text, "\n%s: %s\n  Device: %s/%s/%s", style.heading(name), style.paint(strings.ToLower(label), labelColour(label)), humanText(result.Source), humanText(result.Namespace), humanText(result.ID))
 	if result.SerialNumber != "" {
-		fmt.Fprintf(text, " | serial: %s", humanText(result.SerialNumber))
+		fmt.Fprintf(text, "\n  Serial: %s", humanText(result.SerialNumber))
 	}
 	if result.Platform != "" {
-		fmt.Fprintf(text, " | %s", humanText(result.Platform))
+		fmt.Fprintf(text, "\n  Platform: %s", humanText(result.Platform))
 	}
 	text.WriteByte('\n')
 	if result.Rule != "" {
@@ -134,23 +134,31 @@ func writeDevice(text *strings.Builder, style textStyle, result app.Result, appl
 		fmt.Fprintf(text, "  Reason: %s\n", humanText(result.Reason))
 	}
 	if outcome != "" {
-		fmt.Fprintf(text, "  %s\n", outcome)
+		mark, attribute := "i", color.Faint
+		switch result.Action {
+		case app.ActionSubmitted:
+			mark, attribute = "✓", color.FgHiGreen
+		case app.ActionPending:
+			mark, attribute = "–", color.FgHiYellow
+		case app.ActionFailed, app.ActionPlanned, "":
+		}
+		fmt.Fprintf(text, "  %s %s\n", style.paint(mark, attribute), outcome)
 	}
 	if result.Attempts != 0 {
 		fmt.Fprintf(text, "  Attempts: %d\n", result.Attempts)
 	}
 	if result.Error != "" {
-		fmt.Fprintf(text, "  %s %s\n", style.paint("Error:", color.FgHiRed), humanText(result.Error))
+		fmt.Fprintf(text, "  %s %s\n", style.paint("✗", color.FgHiRed), humanText(result.Error))
 	}
 }
 
 func labelColour(label string) color.Attribute {
 	switch label {
-	case "SUBMITTED", "PLANNED":
+	case "SUBMITTED":
 		return color.FgHiGreen
 	case "FAILED", "INVALID":
 		return color.FgHiRed
-	case "PENDING", "RETRY", "NOT SUBMITTED", "UNRESOLVED":
+	case "PLANNED", "PENDING", "RETRY", "NOT SUBMITTED", "UNRESOLVED":
 		return color.FgHiYellow
 	}
 	return color.Faint

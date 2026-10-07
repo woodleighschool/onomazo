@@ -38,7 +38,7 @@ func TestFiniteCommandsKeepWarningsAndDiscardProgress(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if report.String() != "final report\n" || diagnostics.String() != "Warning: Provider notice; source=fixture\n" {
+	if report.String() != "final report\n" || diagnostics.String() != "! Provider notice; source=fixture\n" {
 		t.Fatalf("stdout=%q stderr=%q", report.String(), diagnostics.String())
 	}
 }
@@ -134,7 +134,7 @@ func TestStartupFailureHasNoReport(t *testing.T) {
 		command.SetArgs([]string{name, "--config", t.TempDir() + "/missing.yaml", "--json"})
 		executed, err := command.ExecuteC()
 		output.finish(executed, err)
-		if err == nil || report.Len() != 0 || strings.Count(diagnostics.String(), "Error:") != 1 || strings.Count(diagnostics.String(), "\n") != 1 {
+		if err == nil || report.Len() != 0 || strings.Count(diagnostics.String(), "✗") != 1 || strings.Count(diagnostics.String(), "\n") != 1 {
 			t.Fatalf("error=%v stdout=%q stderr=%q", err, report.String(), diagnostics.String())
 		}
 	}
@@ -165,7 +165,7 @@ func TestCancellationIsNotAutomaticallyAnInterrupt(t *testing.T) {
 			cancel(errInterrupted)
 		}
 		output.finish(cmd, context.Canceled)
-		if strings.Contains(logs.String(), "interrupted") != interrupted {
+		if strings.Contains(logs.String(), "– Interrupted.") != interrupted {
 			t.Fatalf("interrupted=%v: %s", interrupted, logs.String())
 		}
 	}
