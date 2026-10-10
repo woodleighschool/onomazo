@@ -1,5 +1,44 @@
 # Changelog
 
+## [0.2.0](https://github.com/woodleighschool/onomazo/compare/v0.1.6...v0.2.0) (2026-10-10)
+
+
+### ⚠ BREAKING CHANGES
+
+* **cli:** replace --output with --json and remove finite-command logging flags. JSON includes every result in the selected scope.
+* align reconciler commands and output
+
+### Features
+
+* align reconciler commands and output ([0ece763](https://github.com/woodleighschool/onomazo/commit/0ece7635a5abd60297f847466b0523d7af13005b))
+* **cli:** report naming and request outcomes ([20e4b9c](https://github.com/woodleighschool/onomazo/commit/20e4b9cc9be9b220ab8e535821aa82985881b8c2))
+* **go:** update module github.com/dustin/go-humanize (v1.0.1 → v1.1.0) ([#69](https://github.com/woodleighschool/onomazo/issues/69)) ([02c9621](https://github.com/woodleighschool/onomazo/commit/02c96219219159afe82ad4a2fef2b128fd7195b2))
+* **go:** update module github.com/microsoft/kiota-abstractions-go (v1.10.1 → v1.11.0) ([#68](https://github.com/woodleighschool/onomazo/issues/68)) ([d9d25c7](https://github.com/woodleighschool/onomazo/commit/d9d25c763c9888ce7012d5c72564570a200c8283))
+* **go:** update module github.com/microsoft/kiota-abstractions-go (v1.9.4 → v1.10.0) ([#55](https://github.com/woodleighschool/onomazo/issues/55)) ([4a20a0f](https://github.com/woodleighschool/onomazo/commit/4a20a0f31dcedbbd90c24416eb7e9e2b2ff3410a))
+* **go:** update module github.com/microsoftgraph/msgraph-sdk-go (v1.101.0 → v1.102.0) ([#60](https://github.com/woodleighschool/onomazo/issues/60)) ([5b59cdd](https://github.com/woodleighschool/onomazo/commit/5b59cddab6e8cc2b961e777054ae24c67f95fa2c))
+* **go:** update module github.com/microsoftgraph/msgraph-sdk-go (v1.102.0 → v1.103.0) ([#65](https://github.com/woodleighschool/onomazo/issues/65)) ([51faced](https://github.com/woodleighschool/onomazo/commit/51faced6d40987f0f9cc2d360f8b5a6673f4cf51))
+* **plan:** show noteworthy devices by default ([3fe9705](https://github.com/woodleighschool/onomazo/commit/3fe97056659992c93da9acb7a2ece8a308c1bfbc))
+
+
+### Bug Fixes
+
+* **app:** cancel and join inventory requests on failure ([b69fc77](https://github.com/woodleighschool/onomazo/commit/b69fc77d5ebcbd1024ceebffbc5c1c616aa6e2af))
+* **build:** unify Go toolchain and license tool versions ([be809a1](https://github.com/woodleighschool/onomazo/commit/be809a1bc7720b98842a74cf0a121c75b10d1e1b))
+* **cli:** align terminal output conventions ([7845477](https://github.com/woodleighschool/onomazo/commit/78454779bf78cd3f114dc3d913ffccc37c6daa7d))
+* **container:** update image golang (1.27.0 → 1.27.1) ([#59](https://github.com/woodleighschool/onomazo/issues/59)) ([508695c](https://github.com/woodleighschool/onomazo/commit/508695c1fd4a000e487fcd13f858da3eb411c82e))
+* **go:** update module charm.land/bubbletea/v2 (v2.0.9 → v2.0.10) ([#74](https://github.com/woodleighschool/onomazo/issues/74)) ([8df57b9](https://github.com/woodleighschool/onomazo/commit/8df57b9fb188cae3ed691135c0fa6b1bd5be90eb))
+* **go:** update module github.com/azure/azure-sdk-for-go/sdk/azidentity (v1.14.0 → v1.14.1) ([#53](https://github.com/woodleighschool/onomazo/issues/53)) ([c40cd21](https://github.com/woodleighschool/onomazo/commit/c40cd213cef6772be2a5052887a7dde2ad494919))
+* **go:** update module github.com/gofrs/flock (v0.13.0 → v0.13.1) ([#54](https://github.com/woodleighschool/onomazo/issues/54)) ([335b7ec](https://github.com/woodleighschool/onomazo/commit/335b7ec212a1e2ee44bb2a45f051f6b1fc1f176b))
+* **go:** update module github.com/lmittmann/tint (v1.2.0 → v1.2.1) ([#82](https://github.com/woodleighschool/onomazo/issues/82)) ([41568bb](https://github.com/woodleighschool/onomazo/commit/41568bbd16435c34733e4b7bf71c6de810cbfedd))
+* **go:** update module github.com/mattn/go-runewidth (v0.0.30 → v0.0.31) ([#90](https://github.com/woodleighschool/onomazo/issues/90)) ([7c2f0be](https://github.com/woodleighschool/onomazo/commit/7c2f0be07eacfbde7b779b6a9db68f1de814cd2d))
+* **go:** update module github.com/microsoft/kiota-abstractions-go (v1.10.0 → v1.10.1) ([#58](https://github.com/woodleighschool/onomazo/issues/58)) ([b6a1d94](https://github.com/woodleighschool/onomazo/commit/b6a1d9421e232a392fb1bf8c301fb0510de935d4))
+* **go:** update module github.com/microsoft/kiota-abstractions-go (v1.11.0 → v1.11.1) ([#73](https://github.com/woodleighschool/onomazo/issues/73)) ([931ccf2](https://github.com/woodleighschool/onomazo/commit/931ccf23238c739bb17a33874f76da98f950abca))
+* **go:** update module github.com/microsoftgraph/msgraph-sdk-go (v1.103.0 → v1.104.0) ([#87](https://github.com/woodleighschool/onomazo/issues/87)) ([890aac7](https://github.com/woodleighschool/onomazo/commit/890aac7403e93b731d3392eec84e544acbee1cc7))
+* **go:** update module golang.org/x/sync (v0.22.0 → v0.23.0) ([#86](https://github.com/woodleighschool/onomazo/issues/86)) ([fdb2523](https://github.com/woodleighschool/onomazo/commit/fdb25236acf60c6a66ef602046d7459e11614e2b))
+* **go:** update module golang.org/x/sync (v0.23.0 → v0.24.0) ([#94](https://github.com/woodleighschool/onomazo/issues/94)) ([867a95e](https://github.com/woodleighschool/onomazo/commit/867a95e07d76e6adf01b001d97c61e01adc72146))
+* **go:** update module golang.org/x/term (v0.46.0 → v0.47.0) ([#95](https://github.com/woodleighschool/onomazo/issues/95)) ([0a0f5de](https://github.com/woodleighschool/onomazo/commit/0a0f5deda701ad49519b3d7b7207fdf259a9c3a3))
+* **jamf:** reject incomplete inventory snapshots ([4ad18b9](https://github.com/woodleighschool/onomazo/commit/4ad18b93e54c2724767c3521c43ce72bcd12f722))
+
 ## [0.1.6](https://github.com/woodleighschool/onomazo/compare/v0.1.5...v0.1.6) (2026-08-27)
 
 
