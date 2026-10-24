@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/woodleighschool/onomazo/compare/v0.2.0...v0.2.1) (2026-10-24)
+
+
+### Bug Fixes
+
+* **go:** update module github.com/microsoftgraph/msgraph-sdk-go (v1.104.0 → v1.105.0) ([#116](https://github.com/woodleighschool/onomazo/issues/116)) ([41dc9bb](https://github.com/woodleighschool/onomazo/commit/41dc9bb9d5dbb1bcd7027bd956396daa74c86482))
+
 ## [0.2.0](https://github.com/woodleighschool/onomazo/compare/v0.1.6...v0.2.0) (2026-10-22)
 
 
