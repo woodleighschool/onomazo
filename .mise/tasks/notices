@@ -1,0 +1,5 @@
+#!/bin/sh
+#MISE description="Collect dependency licenses and notices"
+
+exec go-licenses save ./cmd/onomazo --save_path third_party_licenses --force \
+    --ignore github.com/woodleighschool/onomazo
