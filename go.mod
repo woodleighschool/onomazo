@@ -8,7 +8,7 @@ require (
 	github.com/caarlos0/env/v11 v11.4.2
 	github.com/dustin/go-humanize v1.1.0
 	github.com/fatih/color v1.19.0
-	github.com/gofrs/flock v0.13.1
+	github.com/gofrs/flock v0.13.2
 	github.com/invopop/jsonschema v0.14.0
 	github.com/mattn/go-runewidth v0.0.31
 	github.com/microsoft/kiota-abstractions-go v1.12.1
