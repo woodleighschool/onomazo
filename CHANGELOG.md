@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.2.1](https://github.com/woodleighschool/onomazo/compare/v0.2.0...v0.2.1) (2026-11-11)
+
+
+### Bug Fixes
+
+* **go:** update module cel.dev/cel-go (v0.32.0 → v0.33.0) ([#119](https://github.com/woodleighschool/onomazo/issues/119)) ([327ec9e](https://github.com/woodleighschool/onomazo/commit/327ec9e0418dc651d413dd59cd4f1922bf7e4f5a))
+* **go:** update module cel.dev/cel-go (v0.33.0 → v0.33.1) ([#121](https://github.com/woodleighschool/onomazo/issues/121)) ([9ece35c](https://github.com/woodleighschool/onomazo/commit/9ece35c2f9e9bbb96a4364af6d7e884d2cdddeb1))
+* **go:** update module cel.dev/cel-go (v0.33.1 → v0.33.2) ([#126](https://github.com/woodleighschool/onomazo/issues/126)) ([ddb245d](https://github.com/woodleighschool/onomazo/commit/ddb245d4e353187594d8f53b22b26aca1bd2882c))
+* **go:** update module github.com/caarlos0/env/v11 (v11.4.1 → v11.4.2) ([#132](https://github.com/woodleighschool/onomazo/issues/132)) ([eb7dc3b](https://github.com/woodleighschool/onomazo/commit/eb7dc3b2b7d96f0244bd323bda13243c44b1b3b1))
+* **go:** update module github.com/gofrs/flock (v0.13.1 → v0.13.2) ([#137](https://github.com/woodleighschool/onomazo/issues/137)) ([6f77da1](https://github.com/woodleighschool/onomazo/commit/6f77da165c743662ccd6ed655d594f41a6147906))
+* **go:** update module github.com/microsoft/kiota-abstractions-go (v1.11.4 → v1.12.0) ([#122](https://github.com/woodleighschool/onomazo/issues/122)) ([1a89993](https://github.com/woodleighschool/onomazo/commit/1a89993804f3ffa10290daac2c533c08a057f774))
+* **go:** update module github.com/microsoft/kiota-abstractions-go (v1.12.0 → v1.12.1) ([#135](https://github.com/woodleighschool/onomazo/issues/135)) ([f196fb0](https://github.com/woodleighschool/onomazo/commit/f196fb05bea8f71e2075afedf3a6f6a206086e22))
+* **go:** update module github.com/microsoftgraph/msgraph-sdk-go (v1.104.0 → v1.105.0) ([#116](https://github.com/woodleighschool/onomazo/issues/116)) ([41dc9bb](https://github.com/woodleighschool/onomazo/commit/41dc9bb9d5dbb1bcd7027bd956396daa74c86482))
+* **go:** update module github.com/microsoftgraph/msgraph-sdk-go (v1.105.0 → v1.106.0) ([#140](https://github.com/woodleighschool/onomazo/issues/140)) ([daf33e5](https://github.com/woodleighschool/onomazo/commit/daf33e51af4989da586c67e106f48bd9d7cfa204))
+* **go:** update module go.yaml.in/yaml/v4 (v4.0.0-rc.6 → v4.0.0-rc.7) ([#128](https://github.com/woodleighschool/onomazo/issues/128)) ([8e5e7ac](https://github.com/woodleighschool/onomazo/commit/8e5e7ac0f3fd090d93d9ac71639f11438a3f7eb1))
+* **go:** update module go.yaml.in/yaml/v4 (v4.0.0-rc.7 → v4.0.0-rc.8) ([#129](https://github.com/woodleighschool/onomazo/issues/129)) ([7dab3ab](https://github.com/woodleighschool/onomazo/commit/7dab3abc4504837a6fcaccb0d804882fa4bec233))
+* **go:** update module go.yaml.in/yaml/v4 (v4.0.0-rc.8 → v4.0.0-rc.9) ([#130](https://github.com/woodleighschool/onomazo/issues/130)) ([b8aff7a](https://github.com/woodleighschool/onomazo/commit/b8aff7ac9d5839a47eb02c17e0cdaad5610a9aff))
+* **go:** update module go.yaml.in/yaml/v4 (v4.0.0-rc.9 → v4.0.0) ([#133](https://github.com/woodleighschool/onomazo/issues/133)) ([8ad1223](https://github.com/woodleighschool/onomazo/commit/8ad12231824c585295f7292e43c46573b88b123e))
+* **go:** update module golang.org/x/sync (v0.24.0 → v0.25.0) ([#139](https://github.com/woodleighschool/onomazo/issues/139)) ([ec0f09e](https://github.com/woodleighschool/onomazo/commit/ec0f09e320992c338c5eb2422a062f22d09f0f37))
+* **go:** update module golang.org/x/term (v0.47.0 → v0.48.0) ([#141](https://github.com/woodleighschool/onomazo/issues/141)) ([bae2908](https://github.com/woodleighschool/onomazo/commit/bae290836fdec00226c500c886d3fae1b774d350))
+
 ## [0.2.0](https://github.com/woodleighschool/onomazo/compare/v0.1.6...v0.2.0) (2026-10-22)
 
 
