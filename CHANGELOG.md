@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.2](https://github.com/woodleighschool/onomazo/compare/v0.2.1...v0.2.2) (2026-11-19)
+
+
+### Bug Fixes
+
+* **go:** update module cel.dev/cel-go (v0.33.2 → v0.33.4) ([#146](https://github.com/woodleighschool/onomazo/issues/146)) ([a99f3b5](https://github.com/woodleighschool/onomazo/commit/a99f3b5432808d1487f0c6bb439be24c277d1cea))
+* **go:** update module github.com/microsoft/kiota-abstractions-go (v1.12.1 → v1.12.2) ([#147](https://github.com/woodleighschool/onomazo/issues/147)) ([01a14ad](https://github.com/woodleighschool/onomazo/commit/01a14addfb10e855391b7b87efed67809ff94dd0))
+
 ## [0.2.1](https://github.com/woodleighschool/onomazo/compare/v0.2.0...v0.2.1) (2026-11-11)
 
 
