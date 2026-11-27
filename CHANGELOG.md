@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.2.2](https://github.com/woodleighschool/onomazo/compare/v0.2.1...v0.2.2) (2026-11-27)
+
+
+### Bug Fixes
+
+* **go:** update module cel.dev/cel-go (v0.33.2 → v0.33.4) ([#146](https://github.com/woodleighschool/onomazo/issues/146)) ([a99f3b5](https://github.com/woodleighschool/onomazo/commit/a99f3b5432808d1487f0c6bb439be24c277d1cea))
+* **go:** update module github.com/microsoft/kiota-abstractions-go (v1.12.1 → v1.12.2) ([#147](https://github.com/woodleighschool/onomazo/issues/147)) ([01a14ad](https://github.com/woodleighschool/onomazo/commit/01a14addfb10e855391b7b87efed67809ff94dd0))
+* **go:** update module github.com/microsoft/kiota-abstractions-go (v1.12.2 → v1.12.3) ([#155](https://github.com/woodleighschool/onomazo/issues/155)) ([afc8cfd](https://github.com/woodleighschool/onomazo/commit/afc8cfde329c7590295aa5bca1715fefe898ae33))
+* **go:** update module github.com/microsoftgraph/msgraph-sdk-go (v1.106.0 → v1.107.0) ([#150](https://github.com/woodleighschool/onomazo/issues/150)) ([9726b59](https://github.com/woodleighschool/onomazo/commit/9726b599397b05b41ae25c4c9c10bc732c40b904))
+
 ## [0.2.1](https://github.com/woodleighschool/onomazo/compare/v0.2.0...v0.2.1) (2026-11-11)
 
 
